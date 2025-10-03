@@ -3,13 +3,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
+import TechnologyForm from '@/components/TechnologyForm'
 
 interface Technology {
   id: string
   title: string
   description: string | null
   specifications: any | null
-  links: any | null
+  link1: string | null
+  link2: string | null
+  link3: string | null
   company: {
     name: string
   }
@@ -22,7 +25,7 @@ export default function ManagementPage() {
   const { isAdmin, admin } = useAdmin()
   const [technologies, setTechnologies] = useState<Technology[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [editingTech, setEditingTech] = useState<string | null>(null)
+  const [editingTech, setEditingTech] = useState<Technology | null>(null)
   const [showNewTechForm, setShowNewTechForm] = useState(false)
 
   // 필터 상태
@@ -113,9 +116,20 @@ export default function ManagementPage() {
     }
   }
 
-  const handleEdit = (techId: string) => {
+  const handleEdit = (tech: Technology) => {
     if (!isAdmin) return
-    setEditingTech(techId)
+    setEditingTech(tech)
+  }
+
+  const handleFormSuccess = () => {
+    loadTechnologies()
+    setEditingTech(null)
+    setShowNewTechForm(false)
+  }
+
+  const handleFormClose = () => {
+    setEditingTech(null)
+    setShowNewTechForm(false)
   }
 
   const handleDelete = async (techId: string, techName: string) => {
@@ -309,21 +323,50 @@ export default function ManagementPage() {
                       : tech.specifications}
                   </div>
                 )}
-                {tech.links && (
-                  <div className="text-xs">
-                    <a
-                      href={typeof tech.links === 'object' ? tech.links.official : tech.links}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      관련 링크 →
-                    </a>
+                {(tech.link1 || tech.link2 || tech.link3) && (
+                  <div className="text-xs space-y-1">
+                    <div className="font-medium text-gray-700">관련 링크:</div>
+                    {tech.link1 && (
+                      <div>
+                        <a
+                          href={tech.link1}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          링크 1 →
+                        </a>
+                      </div>
+                    )}
+                    {tech.link2 && (
+                      <div>
+                        <a
+                          href={tech.link2}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          링크 2 →
+                        </a>
+                      </div>
+                    )}
+                    {tech.link3 && (
+                      <div>
+                        <a
+                          href={tech.link3}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          링크 3 →
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => handleEdit(tech.id)}
+                    onClick={() => handleEdit(tech)}
                     disabled={!isAdmin}
                     className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-8 px-3 py-2 ${
                       isAdmin
@@ -390,6 +433,15 @@ export default function ManagementPage() {
           <div>ℹ️ 관리자 인증 후 기능 편집이 가능합니다.</div>
         )}
       </div>
+
+      {/* 기술 폼 모달 */}
+      <TechnologyForm
+        technology={editingTech}
+        isOpen={!!editingTech || showNewTechForm}
+        onClose={handleFormClose}
+        onSuccess={handleFormSuccess}
+        adminId={admin?.id}
+      />
     </div>
   );
 }

@@ -33,7 +33,7 @@ export default function Home() {
             </p>
             <a
               href="/comparison"
-              className="inline-flex items-center justify-center rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-hanwha-primary text-white hover:bg-hanwha-primary/90 h-12 px-6 py-3"
+              className="inline-flex items-center justify-center rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-2 border-hanwha-primary text-hanwha-primary bg-background hover:bg-hanwha-primary hover:text-white h-12 px-6 py-3"
             >
               솔루션 비교 보기
             </a>

@@ -38,18 +38,14 @@ export interface TechnologyCategory {
 export interface Technology {
   id: string
   title: string
-  title_en?: string
   company_id: string
   category_id: string
   description?: string
-  description_en?: string
   specifications?: Record<string, unknown>
   features?: string[]
-  links?: Array<{
-    type: 'website' | 'pdf' | 'video' | 'document'
-    url: string
-    title: string
-  }>
+  link1?: string
+  link2?: string
+  link3?: string
   status: 'active' | 'development' | 'discontinued'
   release_date?: string
   created_by?: string
@@ -86,18 +82,14 @@ export interface ComparisonTableRow {
 // 폼 데이터 타입
 export interface TechnologyFormData {
   title: string
-  title_en?: string
   company_id: string
   category_id: string
   description?: string
-  description_en?: string
   specifications?: Record<string, unknown>
   features?: string[]
-  links?: Array<{
-    type: 'website' | 'pdf' | 'video' | 'document'
-    url: string
-    title: string
-  }>
+  link1?: string
+  link2?: string
+  link3?: string
   status: 'active' | 'development' | 'discontinued'
   release_date?: string
 }
