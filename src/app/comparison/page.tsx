@@ -472,62 +472,96 @@ export default function ComparisonPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">기술 비교</h1>
-          <p className="text-muted-foreground">
-            주요 조선사와 기술 기업들의 스마트십 기술을 비교해보세요
-          </p>
+    <div className="executive-container space-y-8">
+      <div className="executive-card p-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-hanwha-text-primary">스마트십 기술 비교</h1>
+            <p className="text-lg text-hanwha-text-secondary">
+              주요 조선사와 기술 기업들의 스마트십 기술을 체계적으로 비교분석
+            </p>
+            <div className="flex items-center space-x-4 text-sm text-hanwha-text-muted">
+              <span>• 기업 {companies.length}개</span>
+              <span>• 기술 카테고리 {categories.length}개</span>
+              <span>• 등록된 기술 {technologies.length}개</span>
+            </div>
+          </div>
         </div>
         {isAdmin && (
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-              관리자: {admin?.admin_name}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-3 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-emerald-700">
+                관리자: {admin?.admin_name}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">구조 편집:</label>
+
+            <div className="flex items-center space-x-3 bg-hanwha-surface px-4 py-2 rounded-lg border border-hanwha-border shadow-sm">
+              <label className="text-sm font-medium text-hanwha-text-secondary">편집 모드</label>
               <button
                 onClick={() => setIsStructureEditMode(!isStructureEditMode)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isStructureEditMode ? 'bg-blue-600' : 'bg-gray-300'
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${
+                  isStructureEditMode
+                    ? 'bg-hanwha-primary shadow-md'
+                    : 'bg-gray-300 hover:bg-gray-400'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 shadow-sm ${
                     isStructureEditMode ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
-              <span className={`text-sm ${isStructureEditMode ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              <span className={`text-sm font-medium ${
+                isStructureEditMode
+                  ? 'text-hanwha-primary'
+                  : 'text-hanwha-text-muted'
+              }`}>
                 {isStructureEditMode ? 'ON' : 'OFF'}
               </span>
             </div>
+
             {pendingChanges.length > 0 && (
-              <div className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                {pendingChanges.length}개 변경사항
+              <div className="flex items-center space-x-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <span className="text-sm font-medium text-amber-700">
+                  {pendingChanges.length}개 변경사항
+                </span>
               </div>
             )}
           </div>
         )}
       </div>
 
-      <div className="rounded-lg border bg-card p-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">비교 테이블</h2>
-          {isAdmin && (
-            <p className="text-sm text-green-600">
-              💡 셀을 클릭하여 기술을 추가하거나 편집할 수 있습니다.
-            </p>
-          )}
+      <div className="executive-table">
+        <div className="p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-hanwha-text-primary">기술 비교 매트릭스</h2>
+              <p className="text-hanwha-text-secondary mt-1">조선사별 스마트십 기술 현황</p>
+            </div>
+            {isAdmin && (
+              <div className="flex items-center space-x-2 bg-hanwha-primary-subtle/30 px-4 py-2 rounded-lg">
+                <svg className="w-4 h-4 text-hanwha-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+                <span className="text-sm font-medium text-hanwha-primary">
+                  셀 클릭으로 기술 정보 편집 가능
+                </span>
+              </div>
+            )}
+          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+          <div className="overflow-x-auto rounded-xl border border-hanwha-border shadow-sm">
+            <table className="w-full border-collapse bg-hanwha-surface">
               <thead>
-                <tr className="bg-muted">
-                  <th className="border border-gray-300 p-3 text-left font-medium">
+                <tr className="bg-gradient-to-r from-hanwha-primary-subtle to-hanwha-primary-subtle/50">
+                  <th className="border-r border-hanwha-border p-4 text-left font-semibold bg-hanwha-primary-subtle/60">
                     <div className="flex items-center justify-between">
-                      <span>기술 카테고리</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-hanwha-primary rounded-full"></div>
+                        <span className="text-hanwha-text-primary font-bold">기술 카테고리</span>
+                      </div>
                       {isStructureEditMode && (
                         <>
                           {!isAddingCategory ? (
@@ -579,15 +613,15 @@ export default function ComparisonPage() {
                   {companies.map(company => (
                     <th
                       key={company.id}
-                      className={`border border-gray-300 p-3 text-left font-medium transition-all ${
-                        isStructureEditMode ? 'cursor-move' : ''
+                      className={`border-r border-hanwha-border p-4 text-left font-semibold transition-all duration-200 ${
+                        isStructureEditMode ? 'cursor-move hover:bg-hanwha-primary-subtle/40' : ''
                       } ${
                         draggedItem?.type === 'company' && draggedItem?.id === company.id
-                          ? 'opacity-50 bg-gray-100'
-                          : ''
+                          ? 'opacity-50 bg-hanwha-primary-subtle/20'
+                          : 'bg-gradient-to-b from-hanwha-primary-subtle/30 to-hanwha-primary-subtle/10'
                       } ${
                         dragOverItem?.type === 'company' && dragOverItem?.id === company.id
-                          ? 'bg-blue-100 border-blue-300'
+                          ? 'bg-hanwha-primary-light/20 border-hanwha-primary shadow-md'
                           : ''
                       }`}
                       draggable={isStructureEditMode && editingCol !== company.id}
@@ -626,27 +660,36 @@ export default function ComparisonPage() {
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               {isStructureEditMode && (
-                                <span className="text-gray-400 text-xs">⋮⋮</span>
+                                <svg className="w-3 h-3 text-hanwha-text-muted" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
                               )}
-                              <span>{company.name}</span>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-hanwha-text-primary">{company.name}</span>
+                                <span className="text-xs text-hanwha-text-muted">기업</span>
+                              </div>
                             </div>
                             {isStructureEditMode && (
-                              <div className="flex gap-1">
+                              <div className="flex gap-2">
                                 <button
                                   onClick={() => handleStartEditCompany(company.id, company.name)}
-                                  className="text-xs bg-blue-500 text-white px-1 py-0.5 rounded hover:bg-blue-600"
+                                  className="p-1 bg-hanwha-primary/10 text-hanwha-primary rounded-md hover:bg-hanwha-primary hover:text-white transition-all duration-200 shadow-sm"
                                   title="편집"
                                 >
-                                  ✏️
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCompany(company.id, company.name)}
-                                  className="text-xs bg-red-500 text-white px-1 py-0.5 rounded hover:bg-red-600"
+                                  className="p-1 bg-red-50 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-all duration-200 shadow-sm"
                                   title="삭제"
                                 >
-                                  🗑️
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
                                 </button>
                               </div>
                             )}
@@ -863,5 +906,5 @@ export default function ComparisonPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

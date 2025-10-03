@@ -79,14 +79,14 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
 
   if (currentAdmin) {
     return (
-      <div className="flex items-center gap-4">
-        <div className="text-sm">
-          <span className="text-green-600 font-medium">✓ 관리자</span>
-          <span className="ml-2 text-gray-700">{currentAdmin.admin_name}</span>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-sm font-medium text-emerald-700">{currentAdmin.admin_name}</span>
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+          className="text-sm px-3 py-2 bg-hanwha-surface border border-hanwha-border rounded-lg hover:bg-hanwha-primary-subtle/20 text-hanwha-text-secondary hover:text-hanwha-primary transition-all duration-200 font-medium"
         >
           로그아웃
         </button>
@@ -98,19 +98,36 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-hanwha-primary to-hanwha-primary-light text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium"
       >
-        관리자 로그인
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+        </svg>
+        <span>관리자 로그인</span>
       </button>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">관리자 인증</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-hanwha-surface rounded-2xl shadow-2xl w-full max-w-md border border-hanwha-border overflow-hidden">
+            {/* 모달 헤더 */}
+            <div className="bg-gradient-to-r from-hanwha-primary-subtle to-hanwha-primary-subtle/50 px-6 py-4 border-b border-hanwha-border">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-hanwha-primary rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-hanwha-text-primary">관리자 인증</h2>
+                  <p className="text-sm text-hanwha-text-secondary">시스템 관리 권한 확인</p>
+                </div>
+              </div>
+            </div>
 
-            <div className="space-y-4">
+            {/* 모달 바디 */}
+            <div className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-hanwha-text-primary mb-2">
                   관리자 코드
                 </label>
                 <input
@@ -118,28 +135,43 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
                   value={adminCode}
                   onChange={(e) => setAdminCode(e.target.value)}
                   placeholder="예: ADMIN001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-hanwha-border rounded-lg focus:outline-none focus:ring-2 focus:ring-hanwha-primary focus:border-hanwha-primary transition-all duration-200 bg-hanwha-background"
                   onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
                 />
               </div>
 
               {error && (
-                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                  {error}
+                <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
                 </div>
               )}
 
-              <div className="text-xs text-gray-500">
-                테스트용 관리자 코드: ADMIN001, ADMIN002, ADMIN003
+              <div className="bg-hanwha-primary-subtle/20 p-3 rounded-lg">
+                <p className="text-sm text-hanwha-text-muted font-medium">
+                  💡 테스트용 관리자 코드
+                </p>
+                <p className="text-xs text-hanwha-text-muted mt-1">
+                  ADMIN001, ADMIN002, ADMIN003
+                </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={handleLogin}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-hanwha-primary to-hanwha-primary-light text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:transform-none font-medium"
                 >
-                  {loading ? '확인 중...' : '로그인'}
+                  {loading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>확인 중...</span>
+                    </div>
+                  ) : (
+                    '로그인'
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -147,7 +179,7 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
                     setAdminCode('')
                     setError('')
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="px-4 py-3 border border-hanwha-border rounded-lg hover:bg-hanwha-primary-subtle/20 text-hanwha-text-secondary hover:text-hanwha-text-primary transition-all duration-200 font-medium"
                 >
                   취소
                 </button>

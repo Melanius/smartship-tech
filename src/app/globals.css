@@ -7,6 +7,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* 한화 브랜드 컬러 확장 */
+  --color-hanwha-primary: var(--hanwha-primary);
+  --color-hanwha-primary-light: var(--hanwha-primary-light);
+  --color-hanwha-primary-lighter: var(--hanwha-primary-lighter);
+  --color-hanwha-primary-subtle: var(--hanwha-primary-subtle);
+  --color-hanwha-background: var(--hanwha-background);
+  --color-hanwha-surface: var(--hanwha-surface);
+  --color-hanwha-border: var(--hanwha-border);
+  --color-hanwha-text-primary: var(--hanwha-text-primary);
+  --color-hanwha-text-secondary: var(--hanwha-text-secondary);
+  --color-hanwha-text-muted: var(--hanwha-text-muted);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -44,7 +56,20 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+
+  /* 한화 브랜드 색상 시스템 */
+  --hanwha-primary: #FF6B35;
+  --hanwha-primary-light: #FF8C42;
+  --hanwha-primary-lighter: #FFA366;
+  --hanwha-primary-subtle: #FFE5D9;
+  --hanwha-background: #FFF9F7;
+  --hanwha-surface: #FFFFFF;
+  --hanwha-border: #F4E6DC;
+  --hanwha-text-primary: #2D1810;
+  --hanwha-text-secondary: #5C4032;
+  --hanwha-text-muted: #8B6F47;
+
+  --background: var(--hanwha-background);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -117,5 +142,30 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  }
+
+  /* 임원급 발표용 타이포그래피 */
+  h1 {
+    @apply text-3xl font-bold text-hanwha-text-primary;
+  }
+  h2 {
+    @apply text-2xl font-semibold text-hanwha-text-primary;
+  }
+  h3 {
+    @apply text-xl font-medium text-hanwha-text-secondary;
+  }
+
+  /* 전문적인 컨테이너 스타일 */
+  .executive-container {
+    @apply max-w-7xl mx-auto px-6 py-8;
+  }
+
+  .executive-card {
+    @apply bg-hanwha-surface rounded-2xl shadow-lg border border-hanwha-border;
+  }
+
+  .executive-table {
+    @apply bg-hanwha-surface rounded-xl shadow-md overflow-hidden border border-hanwha-border;
   }
 }
