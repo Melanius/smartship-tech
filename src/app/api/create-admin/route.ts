@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 
 // 임시 관리자 생성 API (개발용)
 export async function POST() {
   try {
-    // 서비스 키를 사용한 관리자 클라이언트 (RLS 우회)
-    const { createClient } = require('@supabase/supabase-js')
 
     // 여기서는 anon key로는 RLS 때문에 안되므로
     // 직접 SQL 실행을 권장하거나 서비스 키 사용 필요
@@ -19,7 +16,7 @@ export async function POST() {
         '2. /debug-admin 페이지에서 현재 상태 확인',
         '3. 수동으로 Supabase 대시보드에서 관리자 데이터 삽입'
       ],
-      sql: \`
+      sql: `
 -- Supabase SQL Editor에서 실행:
 ALTER TABLE admins DISABLE ROW LEVEL SECURITY;
 INSERT INTO admins (admin_code, admin_name, is_active) VALUES
@@ -28,7 +25,7 @@ INSERT INTO admins (admin_code, admin_name, is_active) VALUES
 ('ADMIN003', '박관리자', true);
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow read access to admins" ON admins FOR SELECT USING (true);
-      \`
+      `
     })
 
   } catch (error) {

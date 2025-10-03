@@ -43,7 +43,7 @@ export interface Technology {
   category_id: string
   description?: string
   description_en?: string
-  specifications?: Record<string, any>
+  specifications?: Record<string, unknown>
   features?: string[]
   links?: Array<{
     type: 'website' | 'pdf' | 'video' | 'document'
@@ -91,7 +91,7 @@ export interface TechnologyFormData {
   category_id: string
   description?: string
   description_en?: string
-  specifications?: Record<string, any>
+  specifications?: Record<string, unknown>
   features?: string[]
   links?: Array<{
     type: 'website' | 'pdf' | 'video' | 'document'

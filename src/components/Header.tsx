@@ -14,6 +14,7 @@ interface Admin {
 
 export default function Header() {
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
   return (
@@ -26,43 +27,55 @@ export default function Header() {
               <div className="w-3 h-3 bg-hanwha-primary rounded-full group-hover:scale-110 transition-transform duration-200"></div>
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-hanwha-text-primary leading-tight">
-                  스마트십 기술 비교
+                  스마트십 기술 연구
                 </span>
                 <span className="text-sm text-hanwha-text-muted font-medium">
-                  Smart Ship Technology Comparison
+                  Smart Ship Technology Research
                 </span>
               </div>
             </Link>
 
             {/* 네비게이션 */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-6">
               <a
-                className={`relative px-4 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform hover:text-hanwha-primary ${
+                className={`relative px-3 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform hover:text-hanwha-primary ${
                   pathname === '/comparison'
                     ? 'text-hanwha-primary before:scale-x-100'
                     : 'text-hanwha-text-primary before:scale-x-0 hover:before:scale-x-100'
                 }`}
                 href="/comparison"
               >
-                기술 비교
+                솔루션 비교
               </a>
               <a
-                className={`relative px-4 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform ${
+                className={`relative px-3 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform ${
                   pathname === '/management'
                     ? 'text-hanwha-primary before:scale-x-100'
                     : `${currentAdmin ? 'text-hanwha-primary' : 'text-hanwha-text-secondary hover:text-hanwha-primary'} before:scale-x-0 hover:before:scale-x-100`
                 }`}
                 href="/management"
               >
-                <span className="flex items-center space-x-2">
-                  <span>기능 관리</span>
-                  {currentAdmin && (
-                    <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-semibold text-emerald-600">관리자</span>
-                    </div>
-                  )}
-                </span>
+                기술 현황
+              </a>
+              <a
+                className={`relative px-3 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform hover:text-hanwha-primary ${
+                  pathname === '/technology-trends'
+                    ? 'text-hanwha-primary before:scale-x-100'
+                    : 'text-hanwha-text-primary before:scale-x-0 hover:before:scale-x-100'
+                }`}
+                href="/technology-trends"
+              >
+                기술 트렌드
+              </a>
+              <a
+                className={`relative px-3 py-2 text-lg font-medium transition-all duration-200 before:absolute before:bottom-0 before:left-0 before:w-full before:h-0.5 before:bg-hanwha-primary before:transition-transform hover:text-hanwha-primary ${
+                  pathname === '/news-clipping'
+                    ? 'text-hanwha-primary before:scale-x-100'
+                    : 'text-hanwha-text-primary before:scale-x-0 hover:before:scale-x-100'
+                }`}
+                href="/news-clipping"
+              >
+                뉴스 클리핑
               </a>
             </nav>
           </div>
@@ -71,10 +84,23 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {/* 모바일 메뉴 버튼 */}
             <div className="md:hidden">
-              <button className="p-2 rounded-lg hover:bg-hanwha-primary-subtle/50 transition-colors">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-lg hover:bg-hanwha-primary-subtle/50 transition-colors"
+              >
                 <span className="sr-only">메뉴 열기</span>
-                <svg className="h-6 w-6 text-hanwha-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <svg
+                  className="h-6 w-6 text-hanwha-text-primary transition-transform duration-200"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ transform: isMobileMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                >
+                  {isMobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
                 </svg>
               </button>
             </div>
@@ -85,6 +111,60 @@ export default function Header() {
             </div>
           </div>
         </div>
+
+        {/* 모바일 메뉴 패널 */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-hanwha-surface border-t border-hanwha-border">
+            <div className="executive-container py-4">
+              <nav className="flex flex-col space-y-4">
+                <a
+                  className={`block px-4 py-3 text-lg font-medium rounded-lg transition-all duration-200 ${
+                    pathname === '/comparison'
+                      ? 'bg-hanwha-primary text-white'
+                      : 'text-hanwha-text-primary hover:bg-hanwha-primary-subtle/50'
+                  }`}
+                  href="/comparison"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  솔루션 비교
+                </a>
+                <a
+                  className={`block px-4 py-3 text-lg font-medium rounded-lg transition-all duration-200 ${
+                    pathname === '/management'
+                      ? 'bg-hanwha-primary text-white'
+                      : 'text-hanwha-text-primary hover:bg-hanwha-primary-subtle/50'
+                  }`}
+                  href="/management"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  기술 현황
+                </a>
+                <a
+                  className={`block px-4 py-3 text-lg font-medium rounded-lg transition-all duration-200 ${
+                    pathname === '/technology-trends'
+                      ? 'bg-hanwha-primary text-white'
+                      : 'text-hanwha-text-primary hover:bg-hanwha-primary-subtle/50'
+                  }`}
+                  href="/technology-trends"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  기술 트렌드
+                </a>
+                <a
+                  className={`block px-4 py-3 text-lg font-medium rounded-lg transition-all duration-200 ${
+                    pathname === '/news-clipping'
+                      ? 'bg-hanwha-primary text-white'
+                      : 'text-hanwha-text-primary hover:bg-hanwha-primary-subtle/50'
+                  }`}
+                  href="/news-clipping"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  뉴스 클리핑
+                </a>
+              </nav>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   )
