@@ -25,9 +25,10 @@ interface Technology {
   company: {
     name: string
   }
-  technology_category: {
+  categories: Array<{
     name: string
-  }
+    type?: 'digital' | 'autonomous'
+  }>
 }
 
 export default function ManagementPage() {
@@ -68,17 +69,27 @@ export default function ManagementPage() {
   }, [technologies])
 
   const availableCategories = useMemo(() => {
-    const categories = technologies
-      .filter(tech => tech.technology_category)
-      .map(tech => tech.technology_category.name)
-    return [...new Set(categories)].sort()
+    const categoryMap = new Map<string, { name: string; type?: 'digital' | 'autonomous' }>()
+
+    technologies
+      .filter(tech => tech.categories && tech.categories.length > 0)
+      .forEach(tech => {
+        tech.categories.forEach(cat => {
+          if (!categoryMap.has(cat.name)) {
+            categoryMap.set(cat.name, { name: cat.name, type: cat.type })
+          }
+        })
+      })
+
+    return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [technologies])
 
   // 필터링된 기술 목록
   const filteredTechnologies = useMemo(() => {
     return technologies.filter(tech => {
       const companyMatch = selectedCompanies.length === 0 || selectedCompanies.includes(tech.company?.name)
-      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(tech.technology_category?.name)
+      const categoryMatch = selectedCategories.length === 0 ||
+        tech.categories?.some(cat => selectedCategories.includes(cat.name))
       return companyMatch && categoryMatch
     })
   }, [technologies, selectedCompanies, selectedCategories])
@@ -111,19 +122,73 @@ export default function ManagementPage() {
 
   const loadTechnologies = async () => {
     try {
-      const { data, error } = await supabase
-        .from('technologies')
+      // 1. 기술-카테고리 매핑 데이터 로드
+      const { data: mappingData, error: mappingError } = await supabase
+        .from('technology_category_mapping')
         .select(`
-          *,
-          company:companies(name),
-          technology_category:technology_categories(name),
-          creator:admins!created_by(admin_name),
-          updater:admins!updated_by(admin_name)
+          category_id,
+          technology_categories:category_id (name, type),
+          technologies:technology_id (
+            id, title, description,
+            link1, link1_title, link2, link2_title, link3, link3_title,
+            company_id, created_by, updated_by, created_at, updated_at
+          )
         `)
-        .order('title')
 
-      if (error) throw error
-      setTechnologies(data || [])
+      if (mappingError) throw mappingError
+
+      // 2. 회사 정보 로드
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, name')
+
+      if (companiesError) throw companiesError
+
+      // 3. 관리자 정보 로드
+      const { data: adminsData, error: adminsError } = await supabase
+        .from('admins')
+        .select('id, admin_name')
+
+      if (adminsError) throw adminsError
+
+      // 4. 데이터 변환: 기술별로 카테고리 그룹화
+      const techMap = new Map<string, Technology>()
+
+      mappingData?.forEach((mapping: any) => {
+        if (!mapping.technologies || typeof mapping.technologies !== 'object') return
+
+        const tech = mapping.technologies
+        const techId = tech.id
+
+        if (!techMap.has(techId)) {
+          const company = companiesData?.find(c => c.id === tech.company_id)
+          const creator = adminsData?.find(a => a.id === tech.created_by)
+          const updater = adminsData?.find(a => a.id === tech.updated_by)
+
+          techMap.set(techId, {
+            ...tech,
+            company: { name: company?.name || '미지정' },
+            categories: [],
+            creator: creator ? { admin_name: creator.admin_name } : undefined,
+            updater: updater ? { admin_name: updater.admin_name } : undefined
+          })
+        }
+
+        // 카테고리 추가
+        const existingTech = techMap.get(techId)!
+        if (mapping.technology_categories) {
+          existingTech.categories.push({
+            name: mapping.technology_categories.name,
+            type: mapping.technology_categories.type
+          })
+        }
+      })
+
+      const techsArray = Array.from(techMap.values()).sort((a, b) =>
+        a.title.localeCompare(b.title)
+      )
+
+      setTechnologies(techsArray)
     } catch (error) {
       console.error('기술 정보 로드 중 오류:', error)
     } finally {
@@ -246,37 +311,78 @@ export default function ManagementPage() {
             </div>
           </div>
 
-          {/* 기술 카테고리 필터 */}
+          {/* 기술별 필터 */}
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-hanwha-text-primary mb-3 flex items-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1zM2 15a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" />
               </svg>
-              기술 카테고리별 필터
+              기술별 필터
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {availableCategories.map(category => {
-                const isSelected = selectedCategories.includes(category)
-                return (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryFilter(category)}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                      isSelected
-                        ? 'bg-gray-100 text-gray-800 border-gray-400 ring-2 ring-gray-400 ring-opacity-20'
-                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-gray-600' : 'bg-gray-400'}`} />
-                    {category}
-                    {isSelected && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                )
-              })}
+            <div className="space-y-3">
+              {/* 디지털 기술 필터 */}
+              <div>
+                <div className="text-xs font-semibold text-purple-700 mb-2 flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 mr-1.5"></span>
+                  디지털 기술
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableCategories.filter(cat => cat.type === 'digital').map(category => {
+                    const isSelected = selectedCategories.includes(category.name)
+                    return (
+                      <button
+                        key={category.name}
+                        onClick={() => handleCategoryFilter(category.name)}
+                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                          isSelected
+                            ? 'bg-purple-100 text-purple-800 border-purple-400 ring-2 ring-purple-400 ring-opacity-20'
+                            : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-purple-600' : 'bg-purple-400'}`} />
+                        {category.name}
+                        {isSelected && (
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* 자율운항 기술 필터 */}
+              <div>
+                <div className="text-xs font-semibold text-sky-700 mb-2 flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-sky-400 mr-1.5"></span>
+                  자율운항 기술
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableCategories.filter(cat => cat.type === 'autonomous').map(category => {
+                    const isSelected = selectedCategories.includes(category.name)
+                    return (
+                      <button
+                        key={category.name}
+                        onClick={() => handleCategoryFilter(category.name)}
+                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                          isSelected
+                            ? 'bg-sky-100 text-sky-800 border-sky-400 ring-2 ring-sky-400 ring-opacity-20'
+                            : 'bg-sky-50 text-sky-600 border-sky-200 hover:bg-sky-100'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-sky-600' : 'bg-sky-400'}`} />
+                        {category.name}
+                        {isSelected && (
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -321,10 +427,31 @@ export default function ManagementPage() {
                     {tech.company?.name || '미지정'}
                   </span>
                 </div>
-                <div className="flex justify-end">
-                  <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
-                    {tech.technology_category?.name || '미분류'}
-                  </span>
+                <div className="flex justify-end flex-wrap gap-1">
+                  {tech.categories && tech.categories.length > 0 ? (
+                    tech.categories.map((cat, idx) => {
+                      const isDigital = cat.type === 'digital'
+                      const isAutonomous = cat.type === 'autonomous'
+                      return (
+                        <span
+                          key={idx}
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                            isDigital
+                              ? 'bg-purple-50 text-purple-700 ring-purple-700/10'
+                              : isAutonomous
+                              ? 'bg-sky-50 text-sky-700 ring-sky-700/10'
+                              : 'bg-gray-50 text-gray-700 ring-gray-700/10'
+                          }`}
+                        >
+                          {cat.name}
+                        </span>
+                      )
+                    })
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
+                      미분류
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="p-6 pt-0 space-y-4">

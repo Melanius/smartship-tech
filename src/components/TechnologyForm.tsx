@@ -12,6 +12,7 @@ interface Company {
 interface Category {
   id: string
   name: string
+  type?: 'digital' | 'autonomous'
 }
 
 interface TechnologyFormProps {
@@ -119,7 +120,7 @@ export default function TechnologyForm({
     try {
       const [companiesResponse, categoriesResponse] = await Promise.all([
         supabase.from('companies').select('id, name').order('name'),
-        supabase.from('technology_categories').select('id, name').order('name')
+        supabase.from('technology_categories').select('id, name, type').order('name')
       ])
 
       if (companiesResponse.data) setCompanies(companiesResponse.data)
@@ -280,27 +281,63 @@ export default function TechnologyForm({
 
           <div>
             <label className="block text-sm font-medium mb-2">카테고리 (복수 선택 가능)</label>
-            <div className="grid grid-cols-3 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto">
-              {categories.map(category => (
-                <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(category.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedCategories([...selectedCategories, category.id])
-                      } else {
-                        setSelectedCategories(selectedCategories.filter(id => id !== category.id))
-                      }
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{category.name}</span>
-                </label>
-              ))}
+
+            {/* 디지털 기술 */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-purple-700 mb-2 flex items-center">
+                <span className="w-3 h-3 rounded-full bg-purple-400 mr-2"></span>
+                디지털 기술
+              </h3>
+              <div className="grid grid-cols-3 gap-2 p-3 border border-purple-200 rounded-md bg-purple-50/30 max-h-48 overflow-y-auto">
+                {categories.filter(cat => cat.type === 'digital').map(category => (
+                  <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-purple-100 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(category.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCategories([...selectedCategories, category.id])
+                        } else {
+                          setSelectedCategories(selectedCategories.filter(id => id !== category.id))
+                        }
+                      }}
+                      className="w-4 h-4 accent-purple-600"
+                    />
+                    <span className="text-sm">{category.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
+
+            {/* 자율운항 기술 */}
+            <div>
+              <h3 className="text-sm font-semibold text-sky-700 mb-2 flex items-center">
+                <span className="w-3 h-3 rounded-full bg-sky-400 mr-2"></span>
+                자율운항 기술
+              </h3>
+              <div className="grid grid-cols-3 gap-2 p-3 border border-sky-200 rounded-md bg-sky-50/30 max-h-48 overflow-y-auto">
+                {categories.filter(cat => cat.type === 'autonomous').map(category => (
+                  <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-sky-100 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(category.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCategories([...selectedCategories, category.id])
+                        } else {
+                          setSelectedCategories(selectedCategories.filter(id => id !== category.id))
+                        }
+                      }}
+                      className="w-4 h-4 accent-sky-600"
+                    />
+                    <span className="text-sm">{category.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {selectedCategories.length > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 mt-2">
                 선택됨: {selectedCategories.length}개
               </p>
             )}
