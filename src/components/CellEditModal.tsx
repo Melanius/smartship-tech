@@ -2,20 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-
-interface Technology {
-  id: string
-  title: string
-  description: string | null
-  company_id: string
-  category_id: string
-  link1?: string | null
-  link1_title?: string | null
-  link2?: string | null
-  link2_title?: string | null
-  link3?: string | null
-  link3_title?: string | null
-}
+import { Technology } from '@/types/database'
 
 interface CellEditModalProps {
   isOpen: boolean

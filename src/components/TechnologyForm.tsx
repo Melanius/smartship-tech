@@ -15,11 +15,25 @@ interface Category {
 }
 
 interface TechnologyFormProps {
-  technology?: any
+  technology?: Technology | null
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
   adminId?: string
+}
+
+interface Technology {
+  id: string
+  title: string
+  company_id: string
+  category_id: string
+  description?: string | null
+  link1?: string | null
+  link1_title?: string | null
+  link2?: string | null
+  link2_title?: string | null
+  link3?: string | null
+  link3_title?: string | null
 }
 
 export default function TechnologyForm({

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
 import CellEditModal from '@/components/CellEditModal'
@@ -89,7 +89,8 @@ export default function ComparisonPage() {
 
   const loadData = async () => {
     try {
-      const [companiesRes, categoriesRes, technologiesRes] = await Promise.all([
+      // Promise.allSettled로 부분 실패 허용
+      const results = await Promise.allSettled([
         supabase.from('companies').select('*').order('sort_order'),
         supabase.from('technology_categories').select('*').order('sort_order'),
         supabase.from('technologies').select(`
@@ -99,9 +100,24 @@ export default function ComparisonPage() {
         `)
       ])
 
-      if (companiesRes.data) setCompanies(companiesRes.data)
-      if (categoriesRes.data) setCategories(categoriesRes.data)
-      if (technologiesRes.data) setTechnologies(technologiesRes.data)
+      // 성공한 결과만 처리
+      if (results[0].status === 'fulfilled' && results[0].value.data) {
+        setCompanies(results[0].value.data)
+      } else if (results[0].status === 'rejected') {
+        console.error('기업 데이터 로드 실패:', results[0].reason)
+      }
+
+      if (results[1].status === 'fulfilled' && results[1].value.data) {
+        setCategories(results[1].value.data)
+      } else if (results[1].status === 'rejected') {
+        console.error('카테고리 데이터 로드 실패:', results[1].reason)
+      }
+
+      if (results[2].status === 'fulfilled' && results[2].value.data) {
+        setTechnologies(results[2].value.data)
+      } else if (results[2].status === 'rejected') {
+        console.error('기술 데이터 로드 실패:', results[2].reason)
+      }
     } catch (error) {
       console.error('데이터 로드 중 오류:', error)
     } finally {
@@ -109,14 +125,28 @@ export default function ComparisonPage() {
     }
   }
 
-  // 복수 기술 지원: 배열 반환
-  const getTechnologies = (categoryId: string, companyId: string) => {
-    return technologies.filter(
-      t => t.company_id === companyId && t.category_id === categoryId
-    )
-  }
+  // 복수 기술 지원: Map 인덱싱으로 O(1) 조회 성능 최적화
+  const technologiesMap = useMemo(() => {
+    const map = new Map<string, Technology[]>()
+    technologies.forEach(tech => {
+      const key = `${tech.company_id}-${tech.category_id}`
+      const existing = map.get(key) || []
+      map.set(key, [...existing, tech])
+    })
+    return map
+  }, [technologies])
 
-  const handleCellClick = (categoryId: string, companyId: string) => {
+  const getTechnologies = useCallback((categoryId: string, companyId: string) => {
+    const key = `${companyId}-${categoryId}`
+    return technologiesMap.get(key) || []
+  }, [technologiesMap])
+
+  const handleTechClick = useCallback((tech: Technology) => {
+    setSelectedTech(tech)
+    setIsTechModalOpen(true)
+  }, [])
+
+  const handleCellClick = useCallback((categoryId: string, companyId: string) => {
     const techs = getTechnologies(categoryId, companyId)
 
     if (isAdmin && isStructureEditMode) {
@@ -129,7 +159,7 @@ export default function ComparisonPage() {
         handleTechClick(techs[0])
       }
     }
-  }
+  }, [isAdmin, isStructureEditMode, getTechnologies, handleTechClick])
 
   const handleSaveTechnology = async (categoryId: string, companyId: string) => {
     if (!isAdmin || !admin) return
@@ -435,79 +465,56 @@ export default function ComparisonPage() {
     setDragOverItem(null)
   }
 
-  const reorderCompanies = async (sourceId: string, targetId: string) => {
-    const sourceIndex = companies.findIndex(c => c.id === sourceId)
-    const targetIndex = companies.findIndex(c => c.id === targetId)
+  // 제네릭 순서 재정렬 함수 - 코드 중복 제거
+  const reorderItems = async <T extends { id: string; name: string }>(
+    items: T[],
+    sourceId: string,
+    targetId: string,
+    tableName: 'companies' | 'technology_categories',
+    typeLabel: string
+  ) => {
+    const sourceIndex = items.findIndex(item => item.id === sourceId)
+    const targetIndex = items.findIndex(item => item.id === targetId)
 
     if (sourceIndex === -1 || targetIndex === -1) return
 
     // 새로운 순서 배열 생성
-    const newCompanies = [...companies]
-    const [movedItem] = newCompanies.splice(sourceIndex, 1)
-    newCompanies.splice(targetIndex, 0, movedItem)
+    const newItems = [...items]
+    const [movedItem] = newItems.splice(sourceIndex, 1)
+    newItems.splice(targetIndex, 0, movedItem)
 
     // sort_order 업데이트
-    const updates = newCompanies.map((company, index) => ({
-      id: company.id,
+    const updates = newItems.map((item, index) => ({
+      id: item.id,
       sort_order: index + 1
     }))
 
     // 데이터베이스 업데이트
     for (const update of updates) {
       await supabase
-        .from('companies')
+        .from(tableName)
         .update({ sort_order: update.sort_order, updated_by: admin?.id })
         .eq('id', update.id)
     }
 
     // 변경 로그 기록
+    const sourceName = items.find(item => item.id === sourceId)?.name
     await supabase.from('change_logs').insert({
-      table_name: 'companies',
+      table_name: tableName,
       record_id: sourceId,
       operation: 'UPDATE',
       admin_id: admin?.id,
-      description: `기업 순서 변경: ${companies.find(c => c.id === sourceId)?.name}`
+      description: `${typeLabel} 순서 변경: ${sourceName}`
     })
 
     await loadData()
   }
 
-  const reorderCategories = async (sourceId: string, targetId: string) => {
-    const sourceIndex = categories.findIndex(c => c.id === sourceId)
-    const targetIndex = categories.findIndex(c => c.id === targetId)
+  const reorderCompanies = (sourceId: string, targetId: string) =>
+    reorderItems(companies, sourceId, targetId, 'companies', '기업')
 
-    if (sourceIndex === -1 || targetIndex === -1) return
-
-    // 새로운 순서 배열 생성
-    const newCategories = [...categories]
-    const [movedItem] = newCategories.splice(sourceIndex, 1)
-    newCategories.splice(targetIndex, 0, movedItem)
-
-    // sort_order 업데이트
-    const updates = newCategories.map((category, index) => ({
-      id: category.id,
-      sort_order: index + 1
-    }))
-
-    // 데이터베이스 업데이트
-    for (const update of updates) {
-      await supabase
-        .from('technology_categories')
-        .update({ sort_order: update.sort_order, updated_by: admin?.id })
-        .eq('id', update.id)
-    }
-
-    // 변경 로그 기록
-    await supabase.from('change_logs').insert({
-      table_name: 'technology_categories',
-      record_id: sourceId,
-      operation: 'UPDATE',
-      admin_id: admin?.id,
-      description: `카테고리 순서 변경: ${categories.find(c => c.id === sourceId)?.name}`
-    })
-
-    await loadData()
-  }
+  const reorderCategories = (sourceId: string, targetId: string) =>
+    reorderItems(categories, sourceId, targetId, 'technology_categories', '카테고리')
 
   // 툴팁 핸들러 함수들
   const handleTechMouseEnter = (tech: Technology, event: React.MouseEvent) => {
@@ -523,12 +530,6 @@ export default function ComparisonPage() {
     if (hoveredTech) {
       setTooltipPosition({ x: event.clientX + 10, y: event.clientY - 10 })
     }
-  }
-
-  // 비로그인 유저용 기술 상세 모달 핸들러
-  const handleTechClick = (tech: Technology) => {
-    setSelectedTech(tech)
-    setIsTechModalOpen(true)
   }
 
   const handleCloseTechModal = () => {
