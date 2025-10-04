@@ -83,6 +83,9 @@ export default function ComparisonPage() {
   const [isCellEditModalOpen, setIsCellEditModalOpen] = useState(false)
   const [editingCellData, setEditingCellData] = useState<{categoryId: string, companyId: string} | null>(null)
 
+  // 탭 선택 상태 (디지털 기술 / 자율운항 기술)
+  const [selectedType, setSelectedType] = useState<'digital' | 'autonomous'>('digital')
+
   useEffect(() => {
     loadData()
   }, [])
@@ -124,6 +127,12 @@ export default function ComparisonPage() {
       setIsLoading(false)
     }
   }
+
+  // 선택된 타입에 따른 카테고리 필터링
+  const filteredCategories = useMemo(() =>
+    categories.filter(c => c.type === selectedType),
+    [categories, selectedType]
+  )
 
   // 복수 기술 지원: Map 인덱싱으로 O(1) 조회 성능 최적화
   const technologiesMap = useMemo(() => {
@@ -608,8 +617,32 @@ export default function ComparisonPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-hanwha-text-primary">기술 비교 매트릭스</h2>
-              <p className="text-hanwha-text-secondary mt-1">조선사별 스마트십 기술 현황</p>
+              <p className="text-hanwha-text-secondary mt-1">기업별 스마트십 기술 현황</p>
             </div>
+          </div>
+
+          {/* 탭 UI */}
+          <div className="flex gap-2 border-b border-hanwha-border">
+            <button
+              onClick={() => setSelectedType('digital')}
+              className={`px-6 py-3 font-semibold transition-all ${
+                selectedType === 'digital'
+                  ? 'text-hanwha-primary border-b-2 border-hanwha-primary bg-hanwha-primary-subtle/20'
+                  : 'text-hanwha-text-secondary hover:text-hanwha-text-primary hover:bg-hanwha-surface'
+              }`}
+            >
+              디지털 기술
+            </button>
+            <button
+              onClick={() => setSelectedType('autonomous')}
+              className={`px-6 py-3 font-semibold transition-all ${
+                selectedType === 'autonomous'
+                  ? 'text-hanwha-primary border-b-2 border-hanwha-primary bg-hanwha-primary-subtle/20'
+                  : 'text-hanwha-text-secondary hover:text-hanwha-text-primary hover:bg-hanwha-surface'
+              }`}
+            >
+              자율운항 기술
+            </button>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-hanwha-border shadow-sm">
@@ -806,7 +839,7 @@ export default function ComparisonPage() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((category, index) => (
+                {filteredCategories.map((category, index) => (
                   <tr
                     key={category.id}
                     className={`transition-all ${index % 2 === 1 ? "bg-muted/50" : ""} ${
