@@ -12,6 +12,7 @@ interface CellEditModalProps {
   existingTechs: Technology[]
   isEditMode: boolean
   onSave: () => void
+  onEditRequest?: (tech: Technology) => void
 }
 
 export default function CellEditModal({
@@ -21,7 +22,8 @@ export default function CellEditModal({
   companyId,
   existingTechs,
   isEditMode,
-  onSave
+  onSave,
+  onEditRequest
 }: CellEditModalProps) {
   const [allTechnologies, setAllTechnologies] = useState<Technology[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -110,6 +112,32 @@ export default function CellEditModal({
     }
   }
 
+  const handleEditTech = (tech: Technology) => {
+    if (onEditRequest) {
+      onEditRequest(tech)
+      onClose()
+    }
+  }
+
+  const handleDeleteTech = async (techId: string, techTitle: string) => {
+    if (!confirm(`"${techTitle}" 기술을 삭제하시겠습니까?`)) return
+
+    try {
+      const { error } = await supabase
+        .from('technologies')
+        .delete()
+        .eq('id', techId)
+
+      if (error) throw error
+
+      alert('기술이 삭제되었습니다.')
+      onSave()
+    } catch (error) {
+      console.error('기술 삭제 중 오류:', error)
+      alert('기술 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -128,8 +156,35 @@ export default function CellEditModal({
             <h3 className="font-semibold mb-2">현재 기술 ({existingTechs.length}개)</h3>
             <div className="space-y-2">
               {existingTechs.map(tech => (
-                <div key={tech.id} className="p-2 bg-blue-50 rounded">
-                  {tech.title}
+                <div
+                  key={tech.id}
+                  className="p-3 bg-blue-50 rounded flex justify-between items-center group hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{tech.title}</div>
+                    {tech.description && (
+                      <div className="text-xs text-gray-600 mt-1 line-clamp-1">
+                        {tech.description}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                    <button
+                      onClick={() => handleEditTech(tech)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap"
+                      title="수정"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTech(tech.id, tech.title)}
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 whitespace-nowrap"
+                      title="삭제"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

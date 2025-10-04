@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
 import CellEditModal from '@/components/CellEditModal'
+import TechnologyForm from '@/components/TechnologyForm'
 
 interface Company {
   id: string
@@ -85,6 +86,10 @@ export default function ComparisonPage() {
 
   // 탭 선택 상태 (디지털 기술 / 자율운항 기술)
   const [selectedType, setSelectedType] = useState<'digital' | 'autonomous'>('digital')
+
+  // 기술 수정을 위한 TechnologyForm 모달 상태
+  const [editingTech, setEditingTech] = useState<Technology | null>(null)
+  const [isTechFormOpen, setIsTechFormOpen] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -262,7 +267,7 @@ export default function ComparisonPage() {
         .from('technology_categories')
         .insert({
           name: newCategoryName.trim(),
-          type: 'digital',
+          type: selectedType, // 현재 선택된 탭의 타입 사용
           sort_order: categories.length + 1,
           created_by: admin.id
         })
@@ -1206,6 +1211,28 @@ export default function ComparisonPage() {
           existingTechs={getTechnologies(editingCellData.categoryId, editingCellData.companyId)}
           isEditMode={isStructureEditMode}
           onSave={loadData}
+          onEditRequest={(tech) => {
+            setEditingTech(tech)
+            setIsTechFormOpen(true)
+          }}
+        />
+      )}
+
+      {/* 기술 수정 모달 */}
+      {isTechFormOpen && (
+        <TechnologyForm
+          technology={editingTech}
+          isOpen={isTechFormOpen}
+          onClose={() => {
+            setIsTechFormOpen(false)
+            setEditingTech(null)
+          }}
+          onSuccess={() => {
+            loadData()
+            setIsTechFormOpen(false)
+            setEditingTech(null)
+          }}
+          adminId={admin?.id}
         />
       )}
     </div>
