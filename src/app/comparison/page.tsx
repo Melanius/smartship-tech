@@ -14,6 +14,7 @@ interface TechnologyCategory {
   id: string
   name: string
   description: string | null
+  type?: 'digital' | 'autonomous'
 }
 
 interface Technology {
@@ -203,6 +204,7 @@ export default function ComparisonPage() {
         .from('technology_categories')
         .insert({
           name: newCategoryName.trim(),
+          type: 'digital',
           sort_order: categories.length + 1,
           created_by: admin.id
         })

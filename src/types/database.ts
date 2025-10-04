@@ -27,6 +27,7 @@ export interface TechnologyCategory {
   name: string
   name_en?: string
   description?: string
+  type?: 'digital' | 'autonomous'
   sort_order: number
   is_active: boolean
   created_by?: string
