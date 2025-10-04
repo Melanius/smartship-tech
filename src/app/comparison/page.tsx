@@ -999,7 +999,7 @@ export default function ComparisonPage() {
             {hoveredTech.description && (
               <div>
                 <h4 className="font-semibold text-sm text-gray-700 mb-1">설명</h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                   {hoveredTech.description}
                 </p>
               </div>
@@ -1069,7 +1069,7 @@ export default function ComparisonPage() {
                   <h4 className="font-bold text-lg text-hanwha-text-primary mb-2 flex items-center gap-2">
                     📋 기술 설명
                   </h4>
-                  <p className="text-hanwha-text-secondary leading-relaxed">
+                  <p className="text-hanwha-text-secondary leading-relaxed whitespace-pre-wrap">
                     {selectedTech.description}
                   </p>
                 </div>

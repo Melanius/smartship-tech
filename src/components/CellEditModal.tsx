@@ -204,7 +204,7 @@ export default function CellEditModal({
                     <div>
                       <div className="font-medium text-sm">{tech.title}</div>
                       {tech.description && (
-                        <div className="text-xs text-gray-500">{tech.description}</div>
+                        <div className="text-xs text-gray-500 whitespace-pre-wrap">{tech.description}</div>
                       )}
                     </div>
                     <button

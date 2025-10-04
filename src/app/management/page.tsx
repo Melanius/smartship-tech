@@ -77,8 +77,8 @@ export default function ManagementPage() {
   // 필터링된 기술 목록
   const filteredTechnologies = useMemo(() => {
     return technologies.filter(tech => {
-      const companyMatch = selectedCompanies.length === 0 || selectedCompanies.includes(tech.company.name)
-      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(tech.technology_category.name)
+      const companyMatch = selectedCompanies.length === 0 || selectedCompanies.includes(tech.company?.name)
+      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(tech.technology_category?.name)
       return companyMatch && categoryMatch
     })
   }, [technologies, selectedCompanies, selectedCategories])
@@ -328,7 +328,7 @@ export default function ManagementPage() {
                 </div>
               </div>
               <div className="p-6 pt-0 space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">
                   {tech.description || '설명이 없습니다.'}
                 </p>
 

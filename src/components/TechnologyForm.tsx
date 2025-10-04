@@ -107,6 +107,7 @@ export default function TechnologyForm({
       // 빈 문자열을 null로 변환하여 데이터베이스 오류 방지
       const cleanedData = {
         ...formData,
+        category_id: formData.category_id || null,
         link1: formData.link1 || null,
         link1_title: formData.link1_title || null,
         link2: formData.link2 || null,
@@ -214,9 +215,8 @@ export default function TechnologyForm({
                 value={formData.category_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
                 className="w-full p-2 border rounded-md"
-                required
               >
-                <option value="">카테고리 선택</option>
+                <option value="">미지정</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
