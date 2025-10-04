@@ -40,7 +40,7 @@ export interface Technology {
   id: string
   title: string
   company_id: string
-  category_id: string
+  category_id?: string | null  // nullable로 변경 (옵션, 레거시 데이터 지원용)
   description?: string
   link1?: string
   link1_title?: string
@@ -52,6 +52,14 @@ export interface Technology {
   updated_by?: string
   created_at: string
   updated_at: string
+}
+
+// 기술-카테고리 매핑 테이블
+export interface TechnologyCategoryMapping {
+  id: string
+  technology_id: string
+  category_id: string
+  created_at: string
 }
 
 export interface ChangeLog {
@@ -71,6 +79,7 @@ export interface ChangeLog {
 export interface TechnologyWithRelations extends Technology {
   company?: Company
   category?: TechnologyCategory
+  categories?: TechnologyCategory[]  // 여러 카테고리 지원
 }
 
 // 비교 테이블을 위한 타입 (복수 기술 지원)
@@ -83,7 +92,7 @@ export interface ComparisonTableRow {
 export interface TechnologyFormData {
   title: string
   company_id: string
-  category_id: string
+  category_ids: string[]  // 여러 카테고리 선택 가능
   description?: string
   link1?: string
   link1_title?: string

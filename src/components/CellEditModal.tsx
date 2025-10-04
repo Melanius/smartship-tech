@@ -56,20 +56,12 @@ export default function CellEditModal({
 
   const handleLoadTech = async (tech: Technology) => {
     try {
-      // 같은 company_id와 category_id로 기술 추가 (복사)
+      // 기존 기술에 새 카테고리 매핑만 추가
       const { error } = await supabase
-        .from('technologies')
+        .from('technology_category_mapping')
         .insert({
-          title: tech.title,
-          description: tech.description,
-          company_id: companyId,
-          category_id: categoryId,
-          link1: tech.link1 || null,
-          link1_title: tech.link1_title || null,
-          link2: tech.link2 || null,
-          link2_title: tech.link2_title || null,
-          link3: tech.link3 || null,
-          link3_title: tech.link3_title || null,
+          technology_id: tech.id,
+          category_id: categoryId
         })
 
       if (error) throw error
@@ -90,16 +82,28 @@ export default function CellEditModal({
     }
 
     try {
-      const { error } = await supabase
+      // 1. 기술 생성 (category_id 없이)
+      const { data: techData, error: techError } = await supabase
         .from('technologies')
         .insert({
           title: newTechTitle,
           description: newTechDescription || null,
-          company_id: companyId,
+          company_id: companyId
+        })
+        .select()
+        .single()
+
+      if (techError) throw techError
+
+      // 2. 카테고리 매핑 생성
+      const { error: mappingError } = await supabase
+        .from('technology_category_mapping')
+        .insert({
+          technology_id: techData.id,
           category_id: categoryId
         })
 
-      if (error) throw error
+      if (mappingError) throw mappingError
 
       alert('새 기술이 추가되었습니다.')
       setNewTechTitle('')
@@ -120,21 +124,23 @@ export default function CellEditModal({
   }
 
   const handleDeleteTech = async (techId: string, techTitle: string) => {
-    if (!confirm(`"${techTitle}" 기술을 삭제하시겠습니까?`)) return
+    if (!confirm(`"${techTitle}" 기술을 이 카테고리에서 제거하시겠습니까?`)) return
 
     try {
+      // 현재 카테고리에서만 매핑 제거 (기술 자체는 유지)
       const { error } = await supabase
-        .from('technologies')
+        .from('technology_category_mapping')
         .delete()
-        .eq('id', techId)
+        .eq('technology_id', techId)
+        .eq('category_id', categoryId)
 
       if (error) throw error
 
-      alert('기술이 삭제되었습니다.')
+      alert('기술이 이 카테고리에서 제거되었습니다.')
       onSave()
     } catch (error) {
-      console.error('기술 삭제 중 오류:', error)
-      alert('기술 삭제 중 오류가 발생했습니다.')
+      console.error('기술 제거 중 오류:', error)
+      alert('기술 제거 중 오류가 발생했습니다.')
     }
   }
 

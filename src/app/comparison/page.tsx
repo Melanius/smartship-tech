@@ -101,10 +101,26 @@ export default function ComparisonPage() {
       const results = await Promise.allSettled([
         supabase.from('companies').select('*').order('sort_order'),
         supabase.from('technology_categories').select('*').order('sort_order'),
-        supabase.from('technologies').select(`
-          *,
-          creator:created_by(id, admin_name),
-          updater:updated_by(id, admin_name)
+        // 기술-카테고리 매핑과 JOIN하여 모든 카테고리 정보 가져오기
+        supabase.from('technology_category_mapping').select(`
+          category_id,
+          technologies:technology_id (
+            id,
+            title,
+            company_id,
+            category_id,
+            description,
+            link1,
+            link1_title,
+            link2,
+            link2_title,
+            link3,
+            link3_title,
+            created_by,
+            updated_by,
+            created_at,
+            updated_at
+          )
         `)
       ])
 
@@ -122,7 +138,22 @@ export default function ComparisonPage() {
       }
 
       if (results[2].status === 'fulfilled' && results[2].value.data) {
-        setTechnologies(results[2].value.data)
+        // mapping 데이터를 technologies 형식으로 변환
+        const mappingData = results[2].value.data as any[]
+        const techsWithCategories: Technology[] = []
+
+        mappingData.forEach((mapping: any) => {
+          if (mapping.technologies && typeof mapping.technologies === 'object') {
+            // technologies가 객체인 경우 (단일 기술)
+            const tech = {
+              ...mapping.technologies,
+              category_id: mapping.category_id  // 매핑의 category_id 사용
+            }
+            techsWithCategories.push(tech)
+          }
+        })
+
+        setTechnologies(techsWithCategories)
       } else if (results[2].status === 'rejected') {
         console.error('기술 데이터 로드 실패:', results[2].reason)
       }

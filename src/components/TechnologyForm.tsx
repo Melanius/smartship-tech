@@ -46,11 +46,11 @@ export default function TechnologyForm({
   const [companies, setCompanies] = useState<Company[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
-  const [formData, setFormData] = useState<TechnologyFormData>({
+  const [formData, setFormData] = useState({
     title: '',
     company_id: '',
-    category_id: '',
     description: '',
     link1: '',
     link1_title: '',
@@ -60,13 +60,12 @@ export default function TechnologyForm({
     link3_title: ''
   })
 
-  // 편집 모드일 때 기존 데이터로 폼 초기화
+  // 편집 모드일 때 기존 데이터로 폼 초기화 및 카테고리 로드
   useEffect(() => {
     if (technology) {
       setFormData({
         title: technology.title || '',
         company_id: technology.company_id || '',
-        category_id: technology.category_id || '',
         description: technology.description || '',
         link1: technology.link1 || '',
         link1_title: technology.link1_title || '',
@@ -75,12 +74,14 @@ export default function TechnologyForm({
         link3: technology.link3 || '',
         link3_title: technology.link3_title || ''
       })
+
+      // 기술의 카테고리 목록 로드
+      loadTechnologyCategories(technology.id)
     } else {
       // 새로 추가할 때 빈 폼으로 초기화
       setFormData({
         title: '',
         company_id: '',
-        category_id: '',
         description: '',
         link1: '',
         link1_title: '',
@@ -89,8 +90,24 @@ export default function TechnologyForm({
         link3: '',
         link3_title: ''
       })
+      setSelectedCategories([])
     }
   }, [technology])
+
+  const loadTechnologyCategories = async (techId: string) => {
+    try {
+      const { data } = await supabase
+        .from('technology_category_mapping')
+        .select('category_id')
+        .eq('technology_id', techId)
+
+      if (data) {
+        setSelectedCategories(data.map(m => m.category_id))
+      }
+    } catch (error) {
+      console.error('카테고리 로드 중 오류:', error)
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -116,12 +133,16 @@ export default function TechnologyForm({
     e.preventDefault()
     if (!adminId) return
 
+    if (selectedCategories.length === 0) {
+      alert('최소 1개의 카테고리를 선택해주세요.')
+      return
+    }
+
     setIsLoading(true)
     try {
       // 빈 문자열을 null로 변환하여 데이터베이스 오류 방지
       const cleanedData = {
         ...formData,
-        category_id: formData.category_id || null,
         link1: formData.link1 || null,
         link1_title: formData.link1_title || null,
         link2: formData.link2 || null,
@@ -132,8 +153,8 @@ export default function TechnologyForm({
       }
 
       if (technology) {
-        // 편집 모드
-        const { error } = await supabase
+        // 편집 모드: 기술 정보 업데이트
+        const { error: updateError } = await supabase
           .from('technologies')
           .update({
             ...cleanedData,
@@ -141,7 +162,27 @@ export default function TechnologyForm({
           })
           .eq('id', technology.id)
 
-        if (error) throw error
+        if (updateError) throw updateError
+
+        // 기존 카테고리 매핑 삭제
+        const { error: deleteError } = await supabase
+          .from('technology_category_mapping')
+          .delete()
+          .eq('technology_id', technology.id)
+
+        if (deleteError) throw deleteError
+
+        // 새 카테고리 매핑 추가
+        const mappings = selectedCategories.map(catId => ({
+          technology_id: technology.id,
+          category_id: catId
+        }))
+
+        const { error: mappingError } = await supabase
+          .from('technology_category_mapping')
+          .insert(mappings)
+
+        if (mappingError) throw mappingError
 
         // 변경 로그 기록
         await supabase.from('change_logs').insert({
@@ -151,16 +192,30 @@ export default function TechnologyForm({
           description: `수정: ${formData.title}`
         })
       } else {
-        // 새로 추가 모드
-        const { error } = await supabase
+        // 새로 추가 모드: 기술 생성
+        const { data: techData, error: insertError } = await supabase
           .from('technologies')
           .insert({
             ...cleanedData,
             created_by: adminId,
             updated_by: adminId
           })
+          .select()
+          .single()
 
-        if (error) throw error
+        if (insertError) throw insertError
+
+        // 카테고리 매핑 추가
+        const mappings = selectedCategories.map(catId => ({
+          technology_id: techData.id,
+          category_id: catId
+        }))
+
+        const { error: mappingError } = await supabase
+          .from('technology_category_mapping')
+          .insert(mappings)
+
+        if (mappingError) throw mappingError
 
         // 변경 로그 기록
         await supabase.from('change_logs').insert({
@@ -173,9 +228,10 @@ export default function TechnologyForm({
 
       onSuccess()
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('기술 저장 중 오류:', error)
-      alert('저장 중 오류가 발생했습니다.')
+      console.error('에러 상세:', error.message, error.code, error.details)
+      alert(`저장 중 오류가 발생했습니다.\n${error.message || JSON.stringify(error)}`)
     } finally {
       setIsLoading(false)
     }
@@ -205,39 +261,49 @@ export default function TechnologyForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">회사</label>
-              <select
-                value={formData.company_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, company_id: e.target.value }))}
-                className="w-full p-2 border rounded-md"
-                required
-              >
-                <option value="">회사 선택</option>
-                {companies.map(company => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">회사</label>
+            <select
+              value={formData.company_id}
+              onChange={(e) => setFormData(prev => ({ ...prev, company_id: e.target.value }))}
+              className="w-full p-2 border rounded-md"
+              required
+            >
+              <option value="">회사 선택</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">카테고리</label>
-              <select
-                value={formData.category_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="">미지정</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className="block text-sm font-medium mb-2">카테고리 (복수 선택 가능)</label>
+            <div className="grid grid-cols-3 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto">
+              {categories.map(category => (
+                <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCategories([...selectedCategories, category.id])
+                      } else {
+                        setSelectedCategories(selectedCategories.filter(id => id !== category.id))
+                      }
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{category.name}</span>
+                </label>
+              ))}
             </div>
+            {selectedCategories.length > 0 && (
+              <p className="text-xs text-gray-600 mt-1">
+                선택됨: {selectedCategories.length}개
+              </p>
+            )}
           </div>
 
           <div>
