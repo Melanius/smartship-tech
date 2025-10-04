@@ -42,13 +42,12 @@ export interface Technology {
   company_id: string
   category_id: string
   description?: string
-  specifications?: Record<string, unknown>
-  features?: string[]
   link1?: string
+  link1_title?: string
   link2?: string
+  link2_title?: string
   link3?: string
-  status: 'active' | 'development' | 'discontinued'
-  release_date?: string
+  link3_title?: string
   created_by?: string
   updated_by?: string
   created_at: string
@@ -74,10 +73,10 @@ export interface TechnologyWithRelations extends Technology {
   category?: TechnologyCategory
 }
 
-// 비교 테이블을 위한 타입
+// 비교 테이블을 위한 타입 (복수 기술 지원)
 export interface ComparisonTableRow {
   company: Company
-  technologies: Record<string, Technology | null> // category_id를 키로 하는 기술 정보
+  technologies: Record<string, Technology[]> // category_id를 키로 하는 기술 배열
 }
 
 // 폼 데이터 타입
@@ -86,11 +85,10 @@ export interface TechnologyFormData {
   company_id: string
   category_id: string
   description?: string
-  specifications?: Record<string, unknown>
-  features?: string[]
   link1?: string
+  link1_title?: string
   link2?: string
+  link2_title?: string
   link3?: string
-  status: 'active' | 'development' | 'discontinued'
-  release_date?: string
+  link3_title?: string
 }

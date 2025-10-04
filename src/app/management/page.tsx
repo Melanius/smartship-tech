@@ -9,10 +9,19 @@ interface Technology {
   id: string
   title: string
   description: string | null
-  specifications: any | null
   link1: string | null
+  link1_title: string | null
   link2: string | null
+  link2_title: string | null
   link3: string | null
+  link3_title: string | null
+  updated_at: string
+  creator?: {
+    admin_name: string
+  }
+  updater?: {
+    admin_name: string
+  }
   company: {
     name: string
   }
@@ -52,12 +61,16 @@ export default function ManagementPage() {
 
   // 동적 필터 옵션 생성
   const availableCompanies = useMemo(() => {
-    const companies = technologies.map(tech => tech.company.name)
+    const companies = technologies
+      .filter(tech => tech.company)
+      .map(tech => tech.company.name)
     return [...new Set(companies)].sort()
   }, [technologies])
 
   const availableCategories = useMemo(() => {
-    const categories = technologies.map(tech => tech.technology_category.name)
+    const categories = technologies
+      .filter(tech => tech.technology_category)
+      .map(tech => tech.technology_category.name)
     return [...new Set(categories)].sort()
   }, [technologies])
 
@@ -103,7 +116,9 @@ export default function ManagementPage() {
         .select(`
           *,
           company:companies(name),
-          technology_category:technology_categories(name)
+          technology_category:technology_categories(name),
+          creator:admins!created_by(admin_name),
+          updater:admins!updated_by(admin_name)
         `)
         .order('title')
 
@@ -303,12 +318,12 @@ export default function ManagementPage() {
                     {tech.title}
                   </h3>
                   <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${companyColors.bg} ${companyColors.text} ${companyColors.ring}`}>
-                    {tech.company.name}
+                    {tech.company?.name || '미지정'}
                   </span>
                 </div>
                 <div className="flex justify-end">
                   <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
-                    {tech.technology_category.name}
+                    {tech.technology_category?.name || '미분류'}
                   </span>
                 </div>
               </div>
@@ -316,13 +331,15 @@ export default function ManagementPage() {
                 <p className="text-sm text-gray-600">
                   {tech.description || '설명이 없습니다.'}
                 </p>
-                {tech.specifications && (
-                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                    <strong>사양:</strong> {typeof tech.specifications === 'object'
-                      ? JSON.stringify(tech.specifications, null, 2)
-                      : tech.specifications}
-                  </div>
-                )}
+
+                {/* 메타데이터 표시 */}
+                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                  <span>마지막 수정: {new Date(tech.updated_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}</span>
+                  {(tech.updater?.admin_name || tech.creator?.admin_name) && (
+                    <span> | 작성자: {tech.updater?.admin_name || tech.creator?.admin_name}</span>
+                  )}
+                </div>
+
                 {(tech.link1 || tech.link2 || tech.link3) && (
                   <div className="text-xs space-y-1">
                     <div className="font-medium text-gray-700">관련 링크:</div>
@@ -334,7 +351,7 @@ export default function ManagementPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          링크 1 →
+                          {tech.link1_title || '링크 1'} →
                         </a>
                       </div>
                     )}
@@ -346,7 +363,7 @@ export default function ManagementPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          링크 2 →
+                          {tech.link2_title || '링크 2'} →
                         </a>
                       </div>
                     )}
@@ -358,7 +375,7 @@ export default function ManagementPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          링크 3 →
+                          {tech.link3_title || '링크 3'} →
                         </a>
                       </div>
                     )}

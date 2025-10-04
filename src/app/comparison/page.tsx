@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
+import CellEditModal from '@/components/CellEditModal'
 
 interface Company {
   id: string
@@ -17,19 +18,28 @@ interface TechnologyCategory {
   type?: 'digital' | 'autonomous'
 }
 
+interface Admin {
+  id: string
+  admin_name: string
+}
+
 interface Technology {
   id: string
   title: string
   description: string | null
   company_id: string
   category_id: string
-  specifications: Record<string, unknown> | null
-  features: string[] | null
   link1: string | null
   link2: string | null
   link3: string | null
-  status: 'active' | 'development' | 'discontinued'
-  release_date: string | null
+  link1_title: string | null
+  link2_title: string | null
+  link3_title: string | null
+  updated_at: string | null
+  created_by: string | null
+  updated_by: string | null
+  creator?: Admin
+  updater?: Admin
 }
 
 export default function ComparisonPage() {
@@ -69,6 +79,10 @@ export default function ComparisonPage() {
   const [selectedTech, setSelectedTech] = useState<Technology | null>(null)
   const [isTechModalOpen, setIsTechModalOpen] = useState(false)
 
+  // 셀 편집 모달을 위한 상태
+  const [isCellEditModalOpen, setIsCellEditModalOpen] = useState(false)
+  const [editingCellData, setEditingCellData] = useState<{categoryId: string, companyId: string} | null>(null)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -78,7 +92,11 @@ export default function ComparisonPage() {
       const [companiesRes, categoriesRes, technologiesRes] = await Promise.all([
         supabase.from('companies').select('*').order('sort_order'),
         supabase.from('technology_categories').select('*').order('sort_order'),
-        supabase.from('technologies').select('*')
+        supabase.from('technologies').select(`
+          *,
+          creator:created_by(id, admin_name),
+          updater:updated_by(id, admin_name)
+        `)
       ])
 
       if (companiesRes.data) setCompanies(companiesRes.data)
@@ -91,24 +109,24 @@ export default function ComparisonPage() {
     }
   }
 
-  const getTechnology = (categoryId: string, companyId: string) => {
-    return technologies.find(
+  // 복수 기술 지원: 배열 반환
+  const getTechnologies = (categoryId: string, companyId: string) => {
+    return technologies.filter(
       t => t.company_id === companyId && t.category_id === categoryId
     )
   }
 
   const handleCellClick = (categoryId: string, companyId: string) => {
-    const tech = getTechnology(categoryId, companyId)
+    const techs = getTechnologies(categoryId, companyId)
 
-    if (isAdmin) {
-      // 관리자: 기존 편집 기능
-      const cellId = `${categoryId}-${companyId}`
-      setEditingCell(cellId)
-      setNewTechName(tech?.title || '')
-    } else {
+    if (isAdmin && isStructureEditMode) {
+      // 관리자 + 편집 모드: 셀 편집 모달 열기
+      setEditingCellData({ categoryId, companyId })
+      setIsCellEditModalOpen(true)
+    } else if (!isAdmin) {
       // 일반 유저: 기술이 있으면 상세 모달 열기
-      if (tech) {
-        handleTechClick(tech)
+      if (techs.length > 0) {
+        handleTechClick(techs[0])
       }
     }
   }
@@ -117,7 +135,8 @@ export default function ComparisonPage() {
     if (!isAdmin || !admin) return
 
     try {
-      const existingTech = getTechnology(categoryId, companyId)
+      const existingTechs = getTechnologies(categoryId, companyId)
+      const existingTech = existingTechs[0]
 
       if (existingTech) {
         // 기존 기술 업데이트
@@ -866,7 +885,8 @@ export default function ComparisonPage() {
                       </div>
                     </td>
                     {companies.map(company => {
-                      const tech = getTechnology(category.id, company.id)
+                      const techs = getTechnologies(category.id, company.id)
+                      const tech = techs[0]
                       const cellId = `${category.id}-${company.id}`
                       const isEditing = editingCell === cellId
 
@@ -904,21 +924,26 @@ export default function ComparisonPage() {
                             </div>
                           ) : (
                             <div
-                              className={`min-h-[32px] flex items-center ${
+                              className={`min-h-[32px] ${
                                 isAdmin ? 'cursor-pointer hover:bg-blue-50 rounded' :
-                                tech ? 'cursor-pointer hover:bg-gray-50 rounded' : ''
+                                techs.length > 0 ? 'cursor-pointer hover:bg-gray-50 rounded' : ''
                               }`}
                               onClick={() => handleCellClick(category.id, company.id)}
                             >
-                              {tech ? (
-                                <span
-                                  className="text-blue-600 font-medium hover:text-blue-800 transition-colors cursor-pointer"
-                                  onMouseEnter={(e) => handleTechMouseEnter(tech, e)}
-                                  onMouseLeave={handleTechMouseLeave}
-                                  onMouseMove={handleTechMouseMove}
-                                >
-                                  {tech.title}
-                                </span>
+                              {techs.length > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  {techs.map((t, idx) => (
+                                    <span
+                                      key={t.id}
+                                      className="text-blue-600 font-medium hover:text-blue-800 transition-colors cursor-pointer text-sm"
+                                      onMouseEnter={(e) => handleTechMouseEnter(t, e)}
+                                      onMouseLeave={handleTechMouseLeave}
+                                      onMouseMove={handleTechMouseMove}
+                                    >
+                                      {t.title}
+                                    </span>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="text-gray-400">
                                   {isAdmin ? '+ 기술 추가' : '-'}
@@ -968,21 +993,6 @@ export default function ComparisonPage() {
               <h3 className="font-bold text-lg text-hanwha-text-primary">
                 {hoveredTech.title}
               </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  hoveredTech.status === 'active' ? 'bg-green-100 text-green-700' :
-                  hoveredTech.status === 'development' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-red-100 text-red-700'
-                }`}>
-                  {hoveredTech.status === 'active' ? '활성' :
-                   hoveredTech.status === 'development' ? '개발 중' : '중단됨'}
-                </span>
-                {hoveredTech.release_date && (
-                  <span className="text-xs text-gray-500">
-                    출시: {new Date(hoveredTech.release_date).toLocaleDateString('ko-KR')}
-                  </span>
-                )}
-              </div>
             </div>
 
             {/* 설명 */}
@@ -992,38 +1002,6 @@ export default function ComparisonPage() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {hoveredTech.description}
                 </p>
-              </div>
-            )}
-
-            {/* 주요 특징 */}
-            {hoveredTech.features && hoveredTech.features.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-700 mb-2">주요 특징</h4>
-                <ul className="space-y-1">
-                  {hoveredTech.features.slice(0, 3).map((feature, index) => (
-                    <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
-                      <span className="text-hanwha-primary text-xs mt-1">•</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                  {hoveredTech.features.length > 3 && (
-                    <li className="text-xs text-gray-400">
-                      +{hoveredTech.features.length - 3}개 더...
-                    </li>
-                  )}
-                </ul>
-              </div>
-            )}
-
-            {/* 사양 */}
-            {hoveredTech.specifications && Object.keys(hoveredTech.specifications).length > 0 && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-700 mb-1">사양</h4>
-                <div className="text-xs bg-gray-50 p-2 rounded text-gray-600 font-mono">
-                  {typeof hoveredTech.specifications === 'object'
-                    ? JSON.stringify(hoveredTech.specifications, null, 2)
-                    : hoveredTech.specifications}
-                </div>
               </div>
             )}
 
@@ -1062,24 +1040,25 @@ export default function ComparisonPage() {
 
             {/* 모달 바디 */}
             <div className="p-6 space-y-6">
-              {/* 기술명과 상태 */}
+              {/* 기술명 */}
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="text-2xl font-bold text-hanwha-text-primary mb-3">
                   {selectedTech.title}
                 </h3>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 text-sm rounded-full font-medium ${
-                    selectedTech.status === 'active' ? 'bg-green-100 text-green-700' :
-                    selectedTech.status === 'development' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {selectedTech.status === 'active' ? '✅ 활성' :
-                     selectedTech.status === 'development' ? '🔄 개발 중' : '⏸️ 중단됨'}
-                  </span>
-                  {selectedTech.release_date && (
-                    <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-                      📅 출시: {new Date(selectedTech.release_date).toLocaleDateString('ko-KR')}
+                {/* 수정일 및 작성자 정보 */}
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  {selectedTech.updated_at && (
+                    <span>
+                      마지막 수정: {new Date(selectedTech.updated_at).toLocaleDateString('ko-KR')}
                     </span>
+                  )}
+                  {(selectedTech.updater?.admin_name || selectedTech.creator?.admin_name) && (
+                    <>
+                      <span>|</span>
+                      <span>
+                        작성자: {selectedTech.updater?.admin_name || selectedTech.creator?.admin_name}
+                      </span>
+                    </>
                   )}
                 </div>
               </div>
@@ -1093,39 +1072,6 @@ export default function ComparisonPage() {
                   <p className="text-hanwha-text-secondary leading-relaxed">
                     {selectedTech.description}
                   </p>
-                </div>
-              )}
-
-              {/* 주요 특징 */}
-              {selectedTech.features && selectedTech.features.length > 0 && (
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <h4 className="font-bold text-lg text-blue-800 mb-3 flex items-center gap-2">
-                    ⭐ 주요 특징
-                  </h4>
-                  <ul className="space-y-2">
-                    {selectedTech.features.map((feature, index) => (
-                      <li key={index} className="text-blue-700 flex items-start gap-3">
-                        <span className="text-blue-500 font-bold mt-1">•</span>
-                        <span className="leading-relaxed">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 기술 사양 */}
-              {selectedTech.specifications && Object.keys(selectedTech.specifications).length > 0 && (
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
-                    🔧 기술 사양
-                  </h4>
-                  <div className="bg-white p-3 rounded-lg text-sm font-mono text-gray-700 border">
-                    <pre className="whitespace-pre-wrap overflow-x-auto">
-                      {typeof selectedTech.specifications === 'object'
-                        ? JSON.stringify(selectedTech.specifications, null, 2)
-                        : selectedTech.specifications}
-                    </pre>
-                  </div>
                 </div>
               )}
 
@@ -1146,7 +1092,9 @@ export default function ComparisonPage() {
                         <div className="flex items-center gap-3">
                           <span className="text-green-600 text-lg">🌐</span>
                           <div>
-                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 1</div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">
+                              {selectedTech.link1_title || '링크 1'}
+                            </div>
                             <div className="text-sm text-green-600 truncate">{selectedTech.link1}</div>
                           </div>
                           <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
@@ -1163,7 +1111,9 @@ export default function ComparisonPage() {
                         <div className="flex items-center gap-3">
                           <span className="text-green-600 text-lg">🌐</span>
                           <div>
-                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 2</div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">
+                              {selectedTech.link2_title || '링크 2'}
+                            </div>
                             <div className="text-sm text-green-600 truncate">{selectedTech.link2}</div>
                           </div>
                           <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
@@ -1180,7 +1130,9 @@ export default function ComparisonPage() {
                         <div className="flex items-center gap-3">
                           <span className="text-green-600 text-lg">🌐</span>
                           <div>
-                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 3</div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">
+                              {selectedTech.link3_title || '링크 3'}
+                            </div>
                             <div className="text-sm text-green-600 truncate">{selectedTech.link3}</div>
                           </div>
                           <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
@@ -1205,6 +1157,22 @@ export default function ComparisonPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 셀 편집 모달 */}
+      {editingCellData && (
+        <CellEditModal
+          isOpen={isCellEditModalOpen}
+          onClose={() => {
+            setIsCellEditModalOpen(false)
+            setEditingCellData(null)
+          }}
+          categoryId={editingCellData.categoryId}
+          companyId={editingCellData.companyId}
+          existingTechs={getTechnologies(editingCellData.categoryId, editingCellData.companyId)}
+          isEditMode={isStructureEditMode}
+          onSave={loadData}
+        />
       )}
     </div>
   )

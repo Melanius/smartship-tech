@@ -38,13 +38,12 @@ export default function TechnologyForm({
     company_id: '',
     category_id: '',
     description: '',
-    specifications: {},
-    features: [],
     link1: '',
+    link1_title: '',
     link2: '',
+    link2_title: '',
     link3: '',
-    status: 'active',
-    release_date: ''
+    link3_title: ''
   })
 
   // 편집 모드일 때 기존 데이터로 폼 초기화
@@ -55,13 +54,12 @@ export default function TechnologyForm({
         company_id: technology.company_id || '',
         category_id: technology.category_id || '',
         description: technology.description || '',
-        specifications: technology.specifications || {},
-        features: technology.features || [],
         link1: technology.link1 || '',
+        link1_title: technology.link1_title || '',
         link2: technology.link2 || '',
+        link2_title: technology.link2_title || '',
         link3: technology.link3 || '',
-        status: technology.status || 'active',
-        release_date: technology.release_date || ''
+        link3_title: technology.link3_title || ''
       })
     } else {
       // 새로 추가할 때 빈 폼으로 초기화
@@ -70,13 +68,12 @@ export default function TechnologyForm({
         company_id: '',
         category_id: '',
         description: '',
-        specifications: {},
-        features: [],
         link1: '',
+        link1_title: '',
         link2: '',
+        link2_title: '',
         link3: '',
-        status: 'active',
-        release_date: ''
+        link3_title: ''
       })
     }
   }, [technology])
@@ -110,10 +107,12 @@ export default function TechnologyForm({
       // 빈 문자열을 null로 변환하여 데이터베이스 오류 방지
       const cleanedData = {
         ...formData,
-        release_date: formData.release_date || null,
         link1: formData.link1 || null,
+        link1_title: formData.link1_title || null,
         link2: formData.link2 || null,
+        link2_title: formData.link2_title || null,
         link3: formData.link3 || null,
+        link3_title: formData.link3_title || null,
         description: formData.description || null
       }
 
@@ -167,15 +166,6 @@ export default function TechnologyForm({
     }
   }
 
-  // 링크 핸들러 제거 (개별 링크 입력으로 변경)
-
-  const handleFeaturesChange = (features: string) => {
-    const featuresArray = features
-      .split('\n')
-      .map(f => f.trim())
-      .filter(f => f.length > 0)
-    setFormData(prev => ({ ...prev, features: featuresArray }))
-  }
 
   if (!isOpen) return null
 
@@ -241,29 +231,24 @@ export default function TechnologyForm({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full p-2 border rounded-md h-24"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">주요 특징 (한 줄씩 입력)</label>
-            <textarea
-              value={formData.features?.join('\n') || ''}
-              onChange={(e) => handleFeaturesChange(e.target.value)}
-              className="w-full p-2 border rounded-md h-20"
-              placeholder="특징 1
-특징 2
-특징 3"
-              rows={3}
+              className="w-full p-2 border rounded-md h-40"
+              rows={6}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-3">관련 링크</label>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">링크 1</label>
+              <div className="space-y-1">
+                <label className="block text-xs text-gray-600">링크 1 제목</label>
+                <input
+                  type="text"
+                  value={formData.link1_title || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, link1_title: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="예: 공식 홈페이지"
+                />
+                <label className="block text-xs text-gray-600 mt-1">링크 1 URL</label>
                 <input
                   type="url"
                   value={formData.link1 || ''}
@@ -272,8 +257,16 @@ export default function TechnologyForm({
                   placeholder="https://example.com"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">링크 2</label>
+              <div className="space-y-1">
+                <label className="block text-xs text-gray-600">링크 2 제목</label>
+                <input
+                  type="text"
+                  value={formData.link2_title || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, link2_title: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="예: 제품 소개서"
+                />
+                <label className="block text-xs text-gray-600 mt-1">링크 2 URL</label>
                 <input
                   type="url"
                   value={formData.link2 || ''}
@@ -282,8 +275,16 @@ export default function TechnologyForm({
                   placeholder="https://example.com"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">링크 3</label>
+              <div className="space-y-1">
+                <label className="block text-xs text-gray-600">링크 3 제목</label>
+                <input
+                  type="text"
+                  value={formData.link3_title || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, link3_title: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="예: 기술 문서"
+                />
+                <label className="block text-xs text-gray-600 mt-1">링크 3 URL</label>
                 <input
                   type="url"
                   value={formData.link3 || ''}
@@ -292,31 +293,6 @@ export default function TechnologyForm({
                   placeholder="https://example.com"
                 />
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">상태</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="active">활성</option>
-                <option value="development">개발 중</option>
-                <option value="discontinued">중단됨</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">출시일</label>
-              <input
-                type="date"
-                value={formData.release_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, release_date: e.target.value }))}
-                className="w-full p-2 border rounded-md"
-              />
             </div>
           </div>
 

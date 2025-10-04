@@ -48,7 +48,6 @@ CREATE TABLE IF NOT EXISTS technologies (
   description TEXT,
   description_en TEXT,
   specifications JSONB,
-  features TEXT[],
   links JSONB,
   status VARCHAR(20) DEFAULT 'active',
   release_date DATE,
