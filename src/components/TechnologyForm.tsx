@@ -107,12 +107,22 @@ export default function TechnologyForm({
 
     setIsLoading(true)
     try {
+      // 빈 문자열을 null로 변환하여 데이터베이스 오류 방지
+      const cleanedData = {
+        ...formData,
+        release_date: formData.release_date || null,
+        link1: formData.link1 || null,
+        link2: formData.link2 || null,
+        link3: formData.link3 || null,
+        description: formData.description || null
+      }
+
       if (technology) {
         // 편집 모드
         const { error } = await supabase
           .from('technologies')
           .update({
-            ...formData,
+            ...cleanedData,
             updated_by: adminId
           })
           .eq('id', technology.id)
@@ -131,7 +141,7 @@ export default function TechnologyForm({
         const { error } = await supabase
           .from('technologies')
           .insert({
-            ...formData,
+            ...cleanedData,
             created_by: adminId,
             updated_by: adminId
           })
