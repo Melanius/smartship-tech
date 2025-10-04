@@ -23,7 +23,12 @@ interface Technology {
   company_id: string
   category_id: string
   specifications: Record<string, unknown> | null
-  links: Record<string, unknown> | null
+  features: string[] | null
+  link1: string | null
+  link2: string | null
+  link3: string | null
+  status: 'active' | 'development' | 'discontinued'
+  release_date: string | null
 }
 
 export default function ComparisonPage() {
@@ -55,6 +60,14 @@ export default function ComparisonPage() {
   const [draggedItem, setDraggedItem] = useState<{type: 'company' | 'category', id: string} | null>(null)
   const [dragOverItem, setDragOverItem] = useState<{type: 'company' | 'category', id: string} | null>(null)
 
+  // 툴팁을 위한 상태
+  const [hoveredTech, setHoveredTech] = useState<Technology | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+
+  // 기술 상세 모달을 위한 상태
+  const [selectedTech, setSelectedTech] = useState<Technology | null>(null)
+  const [isTechModalOpen, setIsTechModalOpen] = useState(false)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -84,11 +97,19 @@ export default function ComparisonPage() {
   }
 
   const handleCellClick = (categoryId: string, companyId: string) => {
-    if (!isAdmin) return
-    const cellId = `${categoryId}-${companyId}`
-    setEditingCell(cellId)
     const tech = getTechnology(categoryId, companyId)
-    setNewTechName(tech?.title || '')
+
+    if (isAdmin) {
+      // 관리자: 기존 편집 기능
+      const cellId = `${categoryId}-${companyId}`
+      setEditingCell(cellId)
+      setNewTechName(tech?.title || '')
+    } else {
+      // 일반 유저: 기술이 있으면 상세 모달 열기
+      if (tech) {
+        handleTechClick(tech)
+      }
+    }
   }
 
   const handleSaveTechnology = async (categoryId: string, companyId: string) => {
@@ -467,6 +488,33 @@ export default function ComparisonPage() {
     await loadData()
   }
 
+  // 툴팁 핸들러 함수들
+  const handleTechMouseEnter = (tech: Technology, event: React.MouseEvent) => {
+    setHoveredTech(tech)
+    setTooltipPosition({ x: event.clientX, y: event.clientY })
+  }
+
+  const handleTechMouseLeave = () => {
+    setHoveredTech(null)
+  }
+
+  const handleTechMouseMove = (event: React.MouseEvent) => {
+    if (hoveredTech) {
+      setTooltipPosition({ x: event.clientX + 10, y: event.clientY - 10 })
+    }
+  }
+
+  // 비로그인 유저용 기술 상세 모달 핸들러
+  const handleTechClick = (tech: Technology) => {
+    setSelectedTech(tech)
+    setIsTechModalOpen(true)
+  }
+
+  const handleCloseTechModal = () => {
+    setSelectedTech(null)
+    setIsTechModalOpen(false)
+  }
+
   if (isLoading) {
     return <div className="flex items-center justify-center p-8">로딩 중...</div>
   }
@@ -540,16 +588,6 @@ export default function ComparisonPage() {
               <h2 className="text-2xl font-bold text-hanwha-text-primary">기술 비교 매트릭스</h2>
               <p className="text-hanwha-text-secondary mt-1">조선사별 스마트십 기술 현황</p>
             </div>
-            {isAdmin && (
-              <div className="flex items-center space-x-2 bg-hanwha-primary-subtle/30 px-4 py-2 rounded-lg">
-                <svg className="w-4 h-4 text-hanwha-primary" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-                <span className="text-sm font-medium text-hanwha-primary">
-                  셀 클릭으로 기술 정보 편집 가능
-                </span>
-              </div>
-            )}
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-hanwha-border shadow-sm">
@@ -668,7 +706,6 @@ export default function ComparisonPage() {
                               )}
                               <div className="flex flex-col">
                                 <span className="font-bold text-hanwha-text-primary">{company.name}</span>
-                                <span className="text-xs text-hanwha-text-muted">기업</span>
                               </div>
                             </div>
                             {isStructureEditMode && (
@@ -866,12 +903,18 @@ export default function ComparisonPage() {
                           ) : (
                             <div
                               className={`min-h-[32px] flex items-center ${
-                                isAdmin ? 'cursor-pointer hover:bg-blue-50 rounded' : ''
+                                isAdmin ? 'cursor-pointer hover:bg-blue-50 rounded' :
+                                tech ? 'cursor-pointer hover:bg-gray-50 rounded' : ''
                               }`}
                               onClick={() => handleCellClick(category.id, company.id)}
                             >
                               {tech ? (
-                                <span className="text-blue-600 font-medium">
+                                <span
+                                  className="text-blue-600 font-medium hover:text-blue-800 transition-colors cursor-pointer"
+                                  onMouseEnter={(e) => handleTechMouseEnter(tech, e)}
+                                  onMouseLeave={handleTechMouseLeave}
+                                  onMouseMove={handleTechMouseMove}
+                                >
                                   {tech.title}
                                 </span>
                               ) : (
@@ -905,6 +948,262 @@ export default function ComparisonPage() {
           <div>ℹ️ 관리자 인증 후 테이블 편집이 가능합니다.</div>
         )}
       </div>
+
+      {/* 기술 상세 정보 툴팁 */}
+      {hoveredTech && (
+        <div
+          className="fixed z-50 bg-white shadow-2xl rounded-xl border border-gray-200 p-4 max-w-md"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: 'translate(-50%, -100%)',
+            pointerEvents: 'none'
+          }}
+        >
+          <div className="space-y-3">
+            {/* 기술명 */}
+            <div className="border-b border-gray-100 pb-2">
+              <h3 className="font-bold text-lg text-hanwha-text-primary">
+                {hoveredTech.title}
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  hoveredTech.status === 'active' ? 'bg-green-100 text-green-700' :
+                  hoveredTech.status === 'development' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {hoveredTech.status === 'active' ? '활성' :
+                   hoveredTech.status === 'development' ? '개발 중' : '중단됨'}
+                </span>
+                {hoveredTech.release_date && (
+                  <span className="text-xs text-gray-500">
+                    출시: {new Date(hoveredTech.release_date).toLocaleDateString('ko-KR')}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 설명 */}
+            {hoveredTech.description && (
+              <div>
+                <h4 className="font-semibold text-sm text-gray-700 mb-1">설명</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {hoveredTech.description}
+                </p>
+              </div>
+            )}
+
+            {/* 주요 특징 */}
+            {hoveredTech.features && hoveredTech.features.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm text-gray-700 mb-2">주요 특징</h4>
+                <ul className="space-y-1">
+                  {hoveredTech.features.slice(0, 3).map((feature, index) => (
+                    <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-hanwha-primary text-xs mt-1">•</span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                  {hoveredTech.features.length > 3 && (
+                    <li className="text-xs text-gray-400">
+                      +{hoveredTech.features.length - 3}개 더...
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* 사양 */}
+            {hoveredTech.specifications && Object.keys(hoveredTech.specifications).length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm text-gray-700 mb-1">사양</h4>
+                <div className="text-xs bg-gray-50 p-2 rounded text-gray-600 font-mono">
+                  {typeof hoveredTech.specifications === 'object'
+                    ? JSON.stringify(hoveredTech.specifications, null, 2)
+                    : hoveredTech.specifications}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* 기술 상세 정보 모달 (비로그인 유저용) */}
+      {isTechModalOpen && selectedTech && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
+            {/* 모달 헤더 */}
+            <div className="bg-gradient-to-r from-hanwha-primary-subtle to-hanwha-primary-subtle/50 px-6 py-4 border-b border-gray-200 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-hanwha-primary rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-hanwha-text-primary">기술 상세 정보</h2>
+                    <p className="text-sm text-hanwha-text-secondary">스마트십 기술 세부사항</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseTechModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* 모달 바디 */}
+            <div className="p-6 space-y-6">
+              {/* 기술명과 상태 */}
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-2xl font-bold text-hanwha-text-primary mb-3">
+                  {selectedTech.title}
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 text-sm rounded-full font-medium ${
+                    selectedTech.status === 'active' ? 'bg-green-100 text-green-700' :
+                    selectedTech.status === 'development' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {selectedTech.status === 'active' ? '✅ 활성' :
+                     selectedTech.status === 'development' ? '🔄 개발 중' : '⏸️ 중단됨'}
+                  </span>
+                  {selectedTech.release_date && (
+                    <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                      📅 출시: {new Date(selectedTech.release_date).toLocaleDateString('ko-KR')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 설명 */}
+              {selectedTech.description && (
+                <div className="bg-hanwha-primary-subtle/10 p-4 rounded-xl">
+                  <h4 className="font-bold text-lg text-hanwha-text-primary mb-2 flex items-center gap-2">
+                    📋 기술 설명
+                  </h4>
+                  <p className="text-hanwha-text-secondary leading-relaxed">
+                    {selectedTech.description}
+                  </p>
+                </div>
+              )}
+
+              {/* 주요 특징 */}
+              {selectedTech.features && selectedTech.features.length > 0 && (
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <h4 className="font-bold text-lg text-blue-800 mb-3 flex items-center gap-2">
+                    ⭐ 주요 특징
+                  </h4>
+                  <ul className="space-y-2">
+                    {selectedTech.features.map((feature, index) => (
+                      <li key={index} className="text-blue-700 flex items-start gap-3">
+                        <span className="text-blue-500 font-bold mt-1">•</span>
+                        <span className="leading-relaxed">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 기술 사양 */}
+              {selectedTech.specifications && Object.keys(selectedTech.specifications).length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    🔧 기술 사양
+                  </h4>
+                  <div className="bg-white p-3 rounded-lg text-sm font-mono text-gray-700 border">
+                    <pre className="whitespace-pre-wrap overflow-x-auto">
+                      {typeof selectedTech.specifications === 'object'
+                        ? JSON.stringify(selectedTech.specifications, null, 2)
+                        : selectedTech.specifications}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
+              {/* 관련 링크 */}
+              {(selectedTech.link1 || selectedTech.link2 || selectedTech.link3) && (
+                <div className="bg-green-50 p-4 rounded-xl">
+                  <h4 className="font-bold text-lg text-green-800 mb-3 flex items-center gap-2">
+                    🔗 관련 링크
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedTech.link1 && (
+                      <a
+                        href={selectedTech.link1}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-white p-3 rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-green-600 text-lg">🌐</span>
+                          <div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 1</div>
+                            <div className="text-sm text-green-600 truncate">{selectedTech.link1}</div>
+                          </div>
+                          <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
+                        </div>
+                      </a>
+                    )}
+                    {selectedTech.link2 && (
+                      <a
+                        href={selectedTech.link2}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-white p-3 rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-green-600 text-lg">🌐</span>
+                          <div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 2</div>
+                            <div className="text-sm text-green-600 truncate">{selectedTech.link2}</div>
+                          </div>
+                          <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
+                        </div>
+                      </a>
+                    )}
+                    {selectedTech.link3 && (
+                      <a
+                        href={selectedTech.link3}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-white p-3 rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-green-600 text-lg">🌐</span>
+                          <div>
+                            <div className="font-medium text-green-800 group-hover:text-green-900">링크 3</div>
+                            <div className="text-sm text-green-600 truncate">{selectedTech.link3}</div>
+                          </div>
+                          <span className="text-green-500 group-hover:text-green-600 ml-auto">↗</span>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 모달 푸터 */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-2xl">
+              <div className="flex justify-end">
+                <button
+                  onClick={handleCloseTechModal}
+                  className="px-6 py-2 bg-hanwha-primary text-white rounded-lg hover:bg-hanwha-primary/90 transition-colors font-medium"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

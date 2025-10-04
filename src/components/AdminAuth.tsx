@@ -64,6 +64,9 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
       setIsModalOpen(false)
       setAdminCode('')
 
+      // 페이지 새로고침으로 편집 기능 즉시 활성화
+      window.location.reload()
+
     } catch (error) {
       setError('로그인 중 오류가 발생했습니다.')
     } finally {
@@ -75,6 +78,9 @@ export default function AdminAuth({ onAuthChange }: AdminAuthProps) {
     setCurrentAdmin(null)
     localStorage.removeItem('admin_auth')
     onAuthChange(null)
+
+    // 페이지 새로고침으로 편집 기능 즉시 비활성화
+    window.location.reload()
   }
 
   if (currentAdmin) {
