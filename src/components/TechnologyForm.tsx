@@ -29,6 +29,8 @@ interface Technology {
   company_id: string
   category_id: string
   description?: string | null
+  acronym?: string | null
+  acronym_full?: string | null
   link1?: string | null
   link1_title?: string | null
   link2?: string | null
@@ -53,6 +55,7 @@ export default function TechnologyForm({
     title: '',
     company_id: '',
     description: '',
+    acronym_full: '',
     link1: '',
     link1_title: '',
     link2: '',
@@ -68,6 +71,7 @@ export default function TechnologyForm({
         title: technology.title || '',
         company_id: technology.company_id || '',
         description: technology.description || '',
+        acronym_full: technology.acronym_full || '',
         link1: technology.link1 || '',
         link1_title: technology.link1_title || '',
         link2: technology.link2 || '',
@@ -84,6 +88,7 @@ export default function TechnologyForm({
         title: '',
         company_id: '',
         description: '',
+        acronym_full: '',
         link1: '',
         link1_title: '',
         link2: '',
@@ -144,6 +149,7 @@ export default function TechnologyForm({
       // 빈 문자열을 null로 변환하여 데이터베이스 오류 방지
       const cleanedData = {
         ...formData,
+        acronym_full: formData.acronym_full || null,
         link1: formData.link1 || null,
         link1_title: formData.link1_title || null,
         link2: formData.link2 || null,
@@ -259,6 +265,18 @@ export default function TechnologyForm({
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               className="w-full p-2 border rounded-md"
               required
+            />
+          </div>
+
+          {/* 약어 전체 설명 입력 필드 */}
+          <div>
+            <label className="block text-sm font-medium mb-1">약어 전체 설명 (선택)</label>
+            <input
+              type="text"
+              value={formData.acronym_full}
+              onChange={(e) => setFormData(prev => ({ ...prev, acronym_full: e.target.value }))}
+              className="w-full p-2 border rounded-md"
+              placeholder="예: Maritime Autonomous Surface Ship"
             />
           </div>
 

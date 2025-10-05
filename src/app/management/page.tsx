@@ -1,14 +1,21 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
 import TechnologyForm from '@/components/TechnologyForm'
+import CompanyBadge from '@/components/CompanyBadge'
+import CategoryBadge from '@/components/CategoryBadge'
+import { getCompanyColors } from '@/utils/companyColors'
+import { formatDateShort, formatDateLong } from '@/utils/dateFormat'
+import { VIEW_MODES, SORT_COLUMNS, LOCAL_STORAGE_KEYS, type ViewMode, type SortColumn, type SortOrder } from '@/constants/viewModes'
 
 interface Technology {
   id: string
   title: string
   description: string | null
+  acronym: string | null
+  acronym_full: string | null
   link1: string | null
   link1_title: string | null
   link2: string | null
@@ -44,43 +51,25 @@ export default function ManagementPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   // 뷰 모드 상태
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
+  const [viewMode, setViewMode] = useState<ViewMode>(VIEW_MODES.CARD)
 
   // 정렬 상태
-  const [sortBy, setSortBy] = useState<'title' | 'company' | 'updated_at'>('title')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [sortBy, setSortBy] = useState<SortColumn>(SORT_COLUMNS.TITLE)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
 
   // localStorage에서 뷰 모드 불러오기
   useEffect(() => {
-    const savedViewMode = localStorage.getItem('managementViewMode')
-    if (savedViewMode === 'card' || savedViewMode === 'table') {
+    const savedViewMode = localStorage.getItem(LOCAL_STORAGE_KEYS.VIEW_MODE) as ViewMode | null
+    if (savedViewMode === VIEW_MODES.CARD || savedViewMode === VIEW_MODES.TABLE) {
       setViewMode(savedViewMode)
     }
   }, [])
 
   // 뷰 모드 변경 시 localStorage에 저장
-  const handleViewModeChange = (mode: 'card' | 'table') => {
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)
-    localStorage.setItem('managementViewMode', mode)
-  }
-
-  // 기업별 색상 정의
-  const getCompanyColors = (companyName: string) => {
-    const colors = {
-      '한화': { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-700/10' },
-      'HD현대': { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-700/10' },
-      '삼성중공업': { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-700/10' },
-      '콩스버그': { bg: 'bg-teal-50', text: 'text-teal-700', ring: 'ring-teal-700/10' },
-      '한국선급': { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-purple-700/10' },
-      'DNV': { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-700/10' },
-    }
-
-    return colors[companyName as keyof typeof colors] || {
-      bg: 'bg-gray-50',
-      text: 'text-gray-700',
-      ring: 'ring-gray-700/10'
-    }
-  }
+    localStorage.setItem(LOCAL_STORAGE_KEYS.VIEW_MODE, mode)
+  }, [])
 
   // 동적 필터 옵션 생성
   const availableCompanies = useMemo(() => {
@@ -121,11 +110,11 @@ export default function ManagementPage() {
     return [...filteredTechnologies].sort((a, b) => {
       let comparison = 0
 
-      if (sortBy === 'title') {
+      if (sortBy === SORT_COLUMNS.TITLE) {
         comparison = a.title.localeCompare(b.title)
-      } else if (sortBy === 'company') {
+      } else if (sortBy === SORT_COLUMNS.COMPANY) {
         comparison = a.company.name.localeCompare(b.company.name)
-      } else if (sortBy === 'updated_at') {
+      } else if (sortBy === SORT_COLUMNS.UPDATED_AT) {
         comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
       }
 
@@ -134,36 +123,36 @@ export default function ManagementPage() {
   }, [filteredTechnologies, sortBy, sortOrder])
 
   // 정렬 핸들러
-  const handleSort = (column: 'title' | 'company' | 'updated_at') => {
+  const handleSort = useCallback((column: SortColumn) => {
     if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(column)
       setSortOrder('asc')
     }
-  }
+  }, [sortBy])
 
   // 필터 핸들러
-  const handleCompanyFilter = (companyName: string) => {
+  const handleCompanyFilter = useCallback((companyName: string) => {
     setSelectedCompanies(prev =>
       prev.includes(companyName)
         ? prev.filter(c => c !== companyName)
         : [...prev, companyName]
     )
-  }
+  }, [])
 
-  const handleCategoryFilter = (categoryName: string) => {
+  const handleCategoryFilter = useCallback((categoryName: string) => {
     setSelectedCategories(prev =>
       prev.includes(categoryName)
         ? prev.filter(c => c !== categoryName)
         : [...prev, categoryName]
     )
-  }
+  }, [])
 
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setSelectedCompanies([])
     setSelectedCategories([])
-  }
+  }, [])
 
   useEffect(() => {
     loadTechnologies()
@@ -178,7 +167,7 @@ export default function ManagementPage() {
           category_id,
           technology_categories:category_id (name, type),
           technologies:technology_id (
-            id, title, description,
+            id, title, description, acronym, acronym_full,
             link1, link1_title, link2, link2_title, link3, link3_title,
             company_id, created_by, updated_by, created_at, updated_at
           )
@@ -203,7 +192,30 @@ export default function ManagementPage() {
       // 4. 데이터 변환: 기술별로 카테고리 그룹화
       const techMap = new Map<string, Technology>()
 
-      mappingData?.forEach((mapping: any) => {
+      interface MappingData {
+        category_id: string
+        technology_categories: { name: string; type?: 'digital' | 'autonomous' } | null
+        technologies: {
+          id: string
+          title: string
+          description: string | null
+          acronym: string | null
+          acronym_full: string | null
+          link1: string | null
+          link1_title: string | null
+          link2: string | null
+          link2_title: string | null
+          link3: string | null
+          link3_title: string | null
+          company_id: string
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        } | null
+      }
+
+      mappingData?.forEach((mapping: MappingData) => {
         if (!mapping.technologies || typeof mapping.technologies !== 'object') return
 
         const tech = mapping.technologies
@@ -245,23 +257,23 @@ export default function ManagementPage() {
     }
   }
 
-  const handleEdit = (tech: Technology) => {
+  const handleEdit = useCallback((tech: Technology) => {
     if (!isAdmin) return
     setEditingTech(tech)
-  }
+  }, [isAdmin])
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     loadTechnologies()
     setEditingTech(null)
     setShowNewTechForm(false)
-  }
+  }, [])
 
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setEditingTech(null)
     setShowNewTechForm(false)
-  }
+  }, [])
 
-  const handleDelete = async (techId: string, techName: string) => {
+  const handleDelete = useCallback(async (techId: string, techName: string) => {
     if (!isAdmin || !admin) return
 
     if (!confirm(`"${techName}" 기술을 삭제하시겠습니까?`)) return
@@ -286,7 +298,7 @@ export default function ManagementPage() {
     } catch (error) {
       console.error('기술 삭제 중 오류:', error)
     }
-  }
+  }, [isAdmin, admin])
 
   if (isLoading) {
     return <div className="flex items-center justify-center p-8">로딩 중...</div>
@@ -323,38 +335,6 @@ export default function ManagementPage() {
 
       {/* 필터 영역 */}
       <div className="executive-card p-6 space-y-4">
-        {/* 뷰 모드 토글 */}
-        <div className="flex justify-end">
-          <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
-            <button
-              onClick={() => handleViewModeChange('card')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                viewMode === 'card'
-                  ? 'bg-hanwha-primary text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zM11 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-              </svg>
-              카드형
-            </button>
-            <button
-              onClick={() => handleViewModeChange('table')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                viewMode === 'table'
-                  ? 'bg-hanwha-primary text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              목록형
-            </button>
-          </div>
-        </div>
-
         <div className="flex flex-col lg:flex-row gap-6">
           {/* 기업 필터 */}
           <div className="flex-1">
@@ -493,43 +473,66 @@ export default function ManagementPage() {
         </div>
       </div>
 
+      {/* 뷰 모드 토글 */}
+      <div className="flex justify-end">
+        <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+          <button
+            onClick={() => handleViewModeChange(VIEW_MODES.CARD)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              viewMode === VIEW_MODES.CARD
+                ? 'bg-hanwha-primary text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zM11 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
+            카드형
+          </button>
+          <button
+            onClick={() => handleViewModeChange(VIEW_MODES.TABLE)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              viewMode === VIEW_MODES.TABLE
+                ? 'bg-hanwha-primary text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            목록형
+          </button>
+        </div>
+      </div>
+
       {/* 카드형 뷰 */}
-      {viewMode === 'card' && (
+      {viewMode === VIEW_MODES.CARD && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {sortedTechnologies.map((tech) => {
-          const companyColors = getCompanyColors(tech.company.name)
-
           return (
             <div key={tech.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
               <div className="flex flex-col space-y-1.5 p-6 pb-4">
                 <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold leading-none tracking-tight">
-                    {tech.title}
-                  </h3>
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${companyColors.bg} ${companyColors.text} ${companyColors.ring}`}>
-                    {tech.company?.name || '미지정'}
-                  </span>
+                  <div className="flex-1">
+                    <h3
+                      className="text-lg font-semibold leading-none tracking-tight cursor-pointer hover:text-blue-600 transition-colors"
+                      onClick={() => setViewingTech(tech)}
+                    >
+                      {tech.title}
+                    </h3>
+                    {tech.acronym_full && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {tech.acronym_full}
+                      </p>
+                    )}
+                  </div>
+                  <CompanyBadge companyName={tech.company.name} />
                 </div>
                 <div className="flex justify-end flex-wrap gap-1">
                   {tech.categories && tech.categories.length > 0 ? (
-                    tech.categories.map((cat, idx) => {
-                      const isDigital = cat.type === 'digital'
-                      const isAutonomous = cat.type === 'autonomous'
-                      return (
-                        <span
-                          key={idx}
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            isDigital
-                              ? 'bg-purple-50 text-purple-700 ring-purple-700/10'
-                              : isAutonomous
-                              ? 'bg-sky-50 text-sky-700 ring-sky-700/10'
-                              : 'bg-gray-50 text-gray-700 ring-gray-700/10'
-                          }`}
-                        >
-                          {cat.name}
-                        </span>
-                      )
-                    })
+                    tech.categories.map((cat, idx) => (
+                      <CategoryBadge key={idx} category={cat} />
+                    ))
                   ) : (
                     <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
                       미분류
@@ -544,7 +547,7 @@ export default function ManagementPage() {
 
                 {/* 메타데이터 표시 */}
                 <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                  <span>마지막 수정: {new Date(tech.updated_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}</span>
+                  <span>마지막 수정: {formatDateShort(tech.updated_at)}</span>
                   {(tech.updater?.admin_name || tech.creator?.admin_name) && (
                     <span> | 작성자: {tech.updater?.admin_name || tech.creator?.admin_name}</span>
                   )}
@@ -636,7 +639,7 @@ export default function ManagementPage() {
       )}
 
       {/* 테이블형 뷰 */}
-      {viewMode === 'table' && (
+      {viewMode === VIEW_MODES.TABLE && (
         <div className="executive-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -644,22 +647,22 @@ export default function ManagementPage() {
                 <tr>
                   <th
                     className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('title')}
+                    onClick={() => handleSort(SORT_COLUMNS.TITLE)}
                   >
                     <div className="flex items-center gap-2">
                       기술명
-                      {sortBy === 'title' && (
+                      {sortBy === SORT_COLUMNS.TITLE && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </div>
                   </th>
                   <th
                     className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('company')}
+                    onClick={() => handleSort(SORT_COLUMNS.COMPANY)}
                   >
                     <div className="flex items-center gap-2">
                       기업
-                      {sortBy === 'company' && (
+                      {sortBy === SORT_COLUMNS.COMPANY && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </div>
@@ -675,11 +678,11 @@ export default function ManagementPage() {
                   </th>
                   <th
                     className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('updated_at')}
+                    onClick={() => handleSort(SORT_COLUMNS.UPDATED_AT)}
                   >
                     <div className="flex items-center gap-2">
                       수정일
-                      {sortBy === 'updated_at' && (
+                      {sortBy === SORT_COLUMNS.UPDATED_AT && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </div>
@@ -696,44 +699,30 @@ export default function ManagementPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedTechnologies.map((tech) => {
-                  const companyColors = getCompanyColors(tech.company.name)
-
                   return (
                     <tr key={tech.id} className="hover:bg-gray-50 transition-colors">
                       {/* 기술명 */}
-                      <td className="px-4 py-3 text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => setViewingTech(tech)}>
-                        {tech.title}
+                      <td className="px-4 py-3 text-sm cursor-pointer" onClick={() => setViewingTech(tech)}>
+                        <div className="font-semibold text-blue-600 hover:text-blue-800">{tech.title}</div>
+                        {tech.acronym_full && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {tech.acronym_full}
+                          </div>
+                        )}
                       </td>
 
                       {/* 기업 */}
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${companyColors.bg} ${companyColors.text} ${companyColors.ring}`}>
-                          {tech.company?.name || '미지정'}
-                        </span>
+                        <CompanyBadge companyName={tech.company.name} />
                       </td>
 
                       {/* 기술 카테고리 */}
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {tech.categories && tech.categories.length > 0 ? (
-                            tech.categories.map((cat, idx) => {
-                              const isDigital = cat.type === 'digital'
-                              const isAutonomous = cat.type === 'autonomous'
-                              return (
-                                <span
-                                  key={idx}
-                                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                                    isDigital
-                                      ? 'bg-purple-50 text-purple-700 ring-purple-700/10'
-                                      : isAutonomous
-                                      ? 'bg-sky-50 text-sky-700 ring-sky-700/10'
-                                      : 'bg-gray-50 text-gray-700 ring-gray-700/10'
-                                  }`}
-                                >
-                                  {cat.name}
-                                </span>
-                              )
-                            })
+                            tech.categories.map((cat, idx) => (
+                              <CategoryBadge key={idx} category={cat} />
+                            ))
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
                               미분류
@@ -790,11 +779,7 @@ export default function ManagementPage() {
 
                       {/* 수정일 */}
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(tech.updated_at).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit'
-                        }).replace(/\. /g, '-').replace('.', '')}
+                        {formatDateShort(tech.updated_at)}
                       </td>
 
                       {/* 작성자 */}
@@ -876,29 +861,17 @@ export default function ManagementPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{viewingTech.title}</h2>
+                  {viewingTech.acronym_full && (
+                    <p className="text-sm text-gray-600 mb-3">
+                      {viewingTech.acronym_full}
+                    </p>
+                  )}
                   <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset ${getCompanyColors(viewingTech.company.name).bg} ${getCompanyColors(viewingTech.company.name).text} ${getCompanyColors(viewingTech.company.name).ring}`}>
-                      {viewingTech.company?.name || '미지정'}
-                    </span>
+                    <CompanyBadge companyName={viewingTech.company.name} className="px-3 py-1 text-sm" />
                     {viewingTech.categories && viewingTech.categories.length > 0 && (
-                      viewingTech.categories.map((cat, idx) => {
-                        const isDigital = cat.type === 'digital'
-                        const isAutonomous = cat.type === 'autonomous'
-                        return (
-                          <span
-                            key={idx}
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset ${
-                              isDigital
-                                ? 'bg-purple-50 text-purple-700 ring-purple-700/10'
-                                : isAutonomous
-                                ? 'bg-sky-50 text-sky-700 ring-sky-700/10'
-                                : 'bg-gray-50 text-gray-700 ring-gray-700/10'
-                            }`}
-                          >
-                            {cat.name}
-                          </span>
-                        )
-                      })
+                      viewingTech.categories.map((cat, idx) => (
+                        <CategoryBadge key={idx} category={cat} className="px-3 py-1 text-sm" />
+                      ))
                     )}
                   </div>
                 </div>
@@ -976,11 +949,7 @@ export default function ManagementPage() {
                   <div>
                     <span className="text-gray-500">최종 수정일:</span>
                     <span className="ml-2 text-gray-900">
-                      {new Date(viewingTech.updated_at).toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {formatDateLong(viewingTech.updated_at)}
                     </span>
                   </div>
                   {(viewingTech.updater?.admin_name || viewingTech.creator?.admin_name) && (

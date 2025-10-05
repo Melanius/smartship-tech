@@ -28,6 +28,8 @@ interface Technology {
   id: string
   title: string
   description: string | null
+  acronym: string | null
+  acronym_full: string | null
   company_id: string
   category_id: string
   link1: string | null
@@ -110,6 +112,8 @@ export default function ComparisonPage() {
             company_id,
             category_id,
             description,
+            acronym,
+            acronym_full,
             link1,
             link1_title,
             link2,
@@ -925,7 +929,7 @@ export default function ComparisonPage() {
                               {isStructureEditMode && (
                                 <span className="text-gray-400 text-xs">⋮⋮</span>
                               )}
-                              <span>{category.name}</span>
+                              <span className="font-bold">{category.name}</span>
                             </div>
                             {isStructureEditMode && (
                               <div className="flex gap-1">
@@ -1000,7 +1004,7 @@ export default function ComparisonPage() {
                                   {techs.map((t, idx) => (
                                     <span
                                       key={t.id}
-                                      className="text-blue-600 font-medium hover:text-blue-800 transition-colors cursor-pointer text-sm"
+                                      className="text-gray-900 font-medium hover:text-gray-700 transition-colors cursor-pointer text-base"
                                       onMouseEnter={(e) => handleTechMouseEnter(t, e)}
                                       onMouseLeave={handleTechMouseLeave}
                                       onMouseMove={handleTechMouseMove}
@@ -1058,13 +1062,19 @@ export default function ComparisonPage() {
               <h3 className="font-bold text-lg text-hanwha-text-primary">
                 {hoveredTech.title}
               </h3>
+              {/* 약어 정보 */}
+              {hoveredTech.acronym_full && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {hoveredTech.acronym_full}
+                </p>
+              )}
             </div>
 
             {/* 설명 */}
             {hoveredTech.description && (
               <div>
                 <h4 className="font-semibold text-sm text-gray-700 mb-1">설명</h4>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
                   {hoveredTech.description}
                 </p>
               </div>
