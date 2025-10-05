@@ -595,15 +595,10 @@ export default function ComparisonPage() {
             <p className="text-lg text-hanwha-text-secondary">
               주요 조선사와 기술 기업들의 스마트십 기술을 체계적으로 비교분석
             </p>
-            <div className="flex items-center space-x-4 text-sm text-hanwha-text-muted">
-              <span>• 기업 {companies.length}개</span>
-              <span>• 기술 카테고리 {categories.length}개</span>
-              <span>• 등록된 기술 {technologies.length}개</span>
-            </div>
           </div>
         </div>
         {isAdmin && (
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 mt-6">
             <div className="flex items-center space-x-3 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-emerald-700">

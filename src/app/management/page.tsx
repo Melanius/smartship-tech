@@ -336,10 +336,10 @@ export default function ManagementPage() {
                         className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
                           isSelected
                             ? 'bg-purple-100 text-purple-800 border-purple-400 ring-2 ring-purple-400 ring-opacity-20'
-                            : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-purple-600' : 'bg-purple-400'}`} />
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-purple-600' : 'bg-gray-400'}`} />
                         {category.name}
                         {isSelected && (
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -368,10 +368,10 @@ export default function ManagementPage() {
                         className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
                           isSelected
                             ? 'bg-sky-100 text-sky-800 border-sky-400 ring-2 ring-sky-400 ring-opacity-20'
-                            : 'bg-sky-50 text-sky-600 border-sky-200 hover:bg-sky-100'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-sky-600' : 'bg-sky-400'}`} />
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-sky-600' : 'bg-gray-400'}`} />
                         {category.name}
                         {isSelected && (
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
