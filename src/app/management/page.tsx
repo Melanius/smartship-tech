@@ -887,6 +887,18 @@ export default function ManagementPage() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* 대표 이미지 */}
+              {(viewingTech as any).image_url && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">대표 이미지</h3>
+                  <img
+                    src={(viewingTech as any).image_url}
+                    alt={viewingTech.title}
+                    className="w-full max-w-2xl h-64 object-cover rounded-lg border shadow-sm"
+                  />
+                </div>
+              )}
+
               {/* 설명 */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">기술 설명</h3>

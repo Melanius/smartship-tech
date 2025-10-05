@@ -51,6 +51,12 @@ export default function TechnologyForm({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
+  // 이미지 관련 상태
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
+  const [deleteExistingImage, setDeleteExistingImage] = useState(false)
+
   const [formData, setFormData] = useState({
     title: '',
     company_id: '',
@@ -80,6 +86,12 @@ export default function TechnologyForm({
         link3_title: technology.link3_title || ''
       })
 
+      // 기존 이미지 URL 설정
+      setExistingImageUrl((technology as any).image_url || null)
+      setImageFile(null)
+      setImagePreview(null)
+      setDeleteExistingImage(false)
+
       // 기술의 카테고리 목록 로드
       loadTechnologyCategories(technology.id)
     } else {
@@ -97,6 +109,10 @@ export default function TechnologyForm({
         link3_title: ''
       })
       setSelectedCategories([])
+      setExistingImageUrl(null)
+      setImageFile(null)
+      setImagePreview(null)
+      setDeleteExistingImage(false)
     }
   }, [technology])
 
@@ -135,6 +151,72 @@ export default function TechnologyForm({
     }
   }
 
+  // 이미지 파일 선택 핸들러
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setDeleteExistingImage(false)
+  }
+
+  // 이미지 업로드 함수
+  const uploadImage = async (techId: string): Promise<string | null> => {
+    if (!imageFile) return null
+
+    try {
+      const fileExt = imageFile.name.split('.').pop()
+      const fileName = `${techId}/${Date.now()}.${fileExt}`
+
+      const { data, error } = await supabase.storage
+        .from('technology-images')
+        .upload(fileName, imageFile)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('technology-images')
+        .getPublicUrl(fileName)
+
+      return publicUrl
+    } catch (error) {
+      console.error('이미지 업로드 중 오류:', error)
+      throw error
+    }
+  }
+
+  // 기존 이미지 삭제 함수
+  const deleteImage = async (imageUrl: string) => {
+    try {
+      // URL에서 파일 경로 추출
+      const urlParts = imageUrl.split('/technology-images/')
+      if (urlParts.length < 2) return
+
+      const filePath = urlParts[1]
+
+      const { error } = await supabase.storage
+        .from('technology-images')
+        .remove([filePath])
+
+      if (error) throw error
+    } catch (error) {
+      console.error('이미지 삭제 중 오류:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!adminId) return
@@ -161,10 +243,28 @@ export default function TechnologyForm({
 
       if (technology) {
         // 편집 모드: 기술 정보 업데이트
+        let imageUrl = existingImageUrl
+
+        // 기존 이미지 삭제 처리
+        if (deleteExistingImage && existingImageUrl) {
+          await deleteImage(existingImageUrl)
+          imageUrl = null
+        }
+
+        // 새 이미지 업로드
+        if (imageFile) {
+          // 기존 이미지가 있으면 삭제
+          if (existingImageUrl && !deleteExistingImage) {
+            await deleteImage(existingImageUrl)
+          }
+          imageUrl = await uploadImage(technology.id)
+        }
+
         const { error: updateError } = await supabase
           .from('technologies')
           .update({
             ...cleanedData,
+            image_url: imageUrl,
             updated_by: adminId
           })
           .eq('id', technology.id)
@@ -211,6 +311,18 @@ export default function TechnologyForm({
           .single()
 
         if (insertError) throw insertError
+
+        // 이미지 업로드 (기술 ID가 생성된 후)
+        let imageUrl = null
+        if (imageFile) {
+          imageUrl = await uploadImage(techData.id)
+
+          // 이미지 URL 업데이트
+          await supabase
+            .from('technologies')
+            .update({ image_url: imageUrl })
+            .eq('id', techData.id)
+        }
 
         // 카테고리 매핑 추가
         const mappings = selectedCategories.map(catId => ({
@@ -359,6 +471,63 @@ export default function TechnologyForm({
                 선택됨: {selectedCategories.length}개
               </p>
             )}
+          </div>
+
+          {/* 이미지 업로드 섹션 */}
+          <div>
+            <label className="block text-sm font-medium mb-3">기술 대표 이미지</label>
+
+            {/* 기존 이미지 표시 */}
+            {existingImageUrl && !imagePreview && !deleteExistingImage && (
+              <div className="mb-3">
+                <img
+                  src={existingImageUrl}
+                  alt="현재 이미지"
+                  className="w-full max-w-md h-48 object-cover rounded-lg border"
+                />
+                <label className="flex items-center mt-2 text-sm text-red-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deleteExistingImage}
+                    onChange={(e) => setDeleteExistingImage(e.target.checked)}
+                    className="mr-2"
+                  />
+                  기존 이미지 삭제
+                </label>
+              </div>
+            )}
+
+            {/* 새 이미지 미리보기 */}
+            {imagePreview && (
+              <div className="mb-3">
+                <img
+                  src={imagePreview}
+                  alt="미리보기"
+                  className="w-full max-w-md h-48 object-cover rounded-lg border"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageFile(null)
+                    setImagePreview(null)
+                  }}
+                  className="mt-2 text-sm text-red-600 hover:text-red-700"
+                >
+                  선택 취소
+                </button>
+              </div>
+            )}
+
+            {/* 파일 선택 입력 */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-hanwha-primary file:text-white hover:file:bg-hanwha-primary/90"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              JPG, PNG, WEBP 형식, 최대 5MB
+            </p>
           </div>
 
           <div>

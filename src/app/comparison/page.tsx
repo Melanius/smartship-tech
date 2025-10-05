@@ -1138,6 +1138,20 @@ export default function ComparisonPage() {
                 </div>
               </div>
 
+              {/* 대표 이미지 */}
+              {(selectedTech as any).image_url && (
+                <div>
+                  <h4 className="font-bold text-lg text-hanwha-text-primary mb-3 flex items-center gap-2">
+                    🖼️ 대표 이미지
+                  </h4>
+                  <img
+                    src={(selectedTech as any).image_url}
+                    alt={selectedTech.title}
+                    className="w-full max-w-2xl h-64 object-cover rounded-lg border shadow-sm"
+                  />
+                </div>
+              )}
+
               {/* 설명 */}
               {selectedTech.description && (
                 <div className="bg-hanwha-primary-subtle/10 p-4 rounded-xl">
