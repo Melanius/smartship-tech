@@ -5,42 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/useAdmin'
 import CellEditModal from '@/components/CellEditModal'
 import TechnologyForm from '@/components/TechnologyForm'
+import type { Company, TechnologyCategory, Technology, Admin } from '@/types/database'
 
-interface Company {
-  id: string
-  name: string
-  description: string | null
-}
-
-interface TechnologyCategory {
-  id: string
-  name: string
-  description: string | null
-  type?: 'digital' | 'autonomous'
-}
-
-interface Admin {
-  id: string
-  admin_name: string
-}
-
-interface Technology {
-  id: string
-  title: string
-  description: string | null
-  acronym: string | null
-  acronym_full: string | null
-  company_id: string
-  category_id: string
-  link1: string | null
-  link2: string | null
-  link3: string | null
-  link1_title: string | null
-  link2_title: string | null
-  link3_title: string | null
-  updated_at: string | null
-  created_by: string | null
-  updated_by: string | null
+// Extended types for this page
+interface TechnologyWithAdmin extends Technology {
   creator?: Admin
   updater?: Admin
 }
@@ -49,7 +17,7 @@ export default function ComparisonPage() {
   const { isAdmin, admin } = useAdmin()
   const [companies, setCompanies] = useState<Company[]>([])
   const [categories, setCategories] = useState<TechnologyCategory[]>([])
-  const [technologies, setTechnologies] = useState<Technology[]>([])
+  const [technologies, setTechnologies] = useState<TechnologyWithAdmin[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [newTechName, setNewTechName] = useState('')
@@ -75,11 +43,11 @@ export default function ComparisonPage() {
   const [dragOverItem, setDragOverItem] = useState<{type: 'company' | 'category', id: string} | null>(null)
 
   // 툴팁을 위한 상태
-  const [hoveredTech, setHoveredTech] = useState<Technology | null>(null)
+  const [hoveredTech, setHoveredTech] = useState<TechnologyWithAdmin | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
 
   // 기술 상세 모달을 위한 상태
-  const [selectedTech, setSelectedTech] = useState<Technology | null>(null)
+  const [selectedTech, setSelectedTech] = useState<TechnologyWithAdmin | null>(null)
   const [isTechModalOpen, setIsTechModalOpen] = useState(false)
 
   // 셀 편집 모달을 위한 상태
@@ -90,7 +58,7 @@ export default function ComparisonPage() {
   const [selectedType, setSelectedType] = useState<'digital' | 'autonomous'>('digital')
 
   // 기술 수정을 위한 TechnologyForm 모달 상태
-  const [editingTech, setEditingTech] = useState<Technology | null>(null)
+  const [editingTech, setEditingTech] = useState<TechnologyWithAdmin | null>(null)
   const [isTechFormOpen, setIsTechFormOpen] = useState(false)
 
   useEffect(() => {
@@ -145,7 +113,7 @@ export default function ComparisonPage() {
       if (results[2].status === 'fulfilled' && results[2].value.data) {
         // mapping 데이터를 technologies 형식으로 변환
         const mappingData = results[2].value.data as any[]
-        const techsWithCategories: Technology[] = []
+        const techsWithCategories: TechnologyWithAdmin[] = []
 
         mappingData.forEach((mapping: any) => {
           if (mapping.technologies && typeof mapping.technologies === 'object') {
@@ -177,7 +145,7 @@ export default function ComparisonPage() {
 
   // 복수 기술 지원: Map 인덱싱으로 O(1) 조회 성능 최적화
   const technologiesMap = useMemo(() => {
-    const map = new Map<string, Technology[]>()
+    const map = new Map<string, TechnologyWithAdmin[]>()
     technologies.forEach(tech => {
       const key = `${tech.company_id}-${tech.category_id}`
       const existing = map.get(key) || []
@@ -191,7 +159,7 @@ export default function ComparisonPage() {
     return technologiesMap.get(key) || []
   }, [technologiesMap])
 
-  const handleTechClick = useCallback((tech: Technology) => {
+  const handleTechClick = useCallback((tech: TechnologyWithAdmin) => {
     setSelectedTech(tech)
     setIsTechModalOpen(true)
   }, [])
@@ -567,7 +535,7 @@ export default function ComparisonPage() {
     reorderItems(categories, sourceId, targetId, 'technology_categories', '카테고리')
 
   // 툴팁 핸들러 함수들
-  const handleTechMouseEnter = (tech: Technology, event: React.MouseEvent) => {
+  const handleTechMouseEnter = (tech: TechnologyWithAdmin, event: React.MouseEvent) => {
     setHoveredTech(tech)
     setTooltipPosition({ x: event.clientX, y: event.clientY })
   }

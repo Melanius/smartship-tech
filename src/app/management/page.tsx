@@ -9,20 +9,9 @@ import CategoryBadge from '@/components/CategoryBadge'
 import { getCompanyColors } from '@/utils/companyColors'
 import { formatDateShort, formatDateLong } from '@/utils/dateFormat'
 import { VIEW_MODES, SORT_COLUMNS, LOCAL_STORAGE_KEYS, type ViewMode, type SortColumn, type SortOrder } from '@/constants/viewModes'
+import type { Technology as BaseTechnology } from '@/types/database'
 
-interface Technology {
-  id: string
-  title: string
-  description: string | null
-  acronym: string | null
-  acronym_full: string | null
-  link1: string | null
-  link1_title: string | null
-  link2: string | null
-  link2_title: string | null
-  link3: string | null
-  link3_title: string | null
-  updated_at: string
+interface Technology extends BaseTechnology {
   creator?: {
     admin_name: string
   }
@@ -193,30 +182,7 @@ export default function ManagementPage() {
       // 4. 데이터 변환: 기술별로 카테고리 그룹화
       const techMap = new Map<string, Technology>()
 
-      interface MappingData {
-        category_id: string
-        technology_categories: { name: string; type?: 'digital' | 'autonomous' } | null
-        technologies: {
-          id: string
-          title: string
-          description: string | null
-          acronym: string | null
-          acronym_full: string | null
-          link1: string | null
-          link1_title: string | null
-          link2: string | null
-          link2_title: string | null
-          link3: string | null
-          link3_title: string | null
-          company_id: string
-          created_by: string | null
-          updated_by: string | null
-          created_at: string
-          updated_at: string
-        } | null
-      }
-
-      mappingData?.forEach((mapping: MappingData) => {
+      mappingData?.forEach((mapping: any) => {
         if (!mapping.technologies || typeof mapping.technologies !== 'object') return
 
         const tech = mapping.technologies
@@ -228,7 +194,24 @@ export default function ManagementPage() {
           const updater = adminsData?.find(a => a.id === tech.updated_by)
 
           techMap.set(techId, {
-            ...tech,
+            id: tech.id,
+            title: tech.title,
+            company_id: tech.company_id,
+            category_id: null,
+            description: tech.description ?? undefined,
+            acronym: tech.acronym ?? undefined,
+            acronym_full: tech.acronym_full ?? undefined,
+            image_url: tech.image_url ?? undefined,
+            link1: tech.link1 ?? undefined,
+            link1_title: tech.link1_title ?? undefined,
+            link2: tech.link2 ?? undefined,
+            link2_title: tech.link2_title ?? undefined,
+            link3: tech.link3 ?? undefined,
+            link3_title: tech.link3_title ?? undefined,
+            created_by: tech.created_by ?? undefined,
+            updated_by: tech.updated_by ?? undefined,
+            created_at: tech.created_at,
+            updated_at: tech.updated_at,
             company: { name: company?.name || '미지정' },
             categories: [],
             creator: creator ? { admin_name: creator.admin_name } : undefined,

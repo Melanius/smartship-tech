@@ -2,18 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { TechnologyFormData } from '@/types/database'
-
-interface Company {
-  id: string
-  name: string
-}
-
-interface Category {
-  id: string
-  name: string
-  type?: 'digital' | 'autonomous'
-}
+import type { Company, TechnologyCategory, Technology, TechnologyFormData } from '@/types/database'
 
 interface TechnologyFormProps {
   technology?: Technology | null
@@ -23,21 +12,8 @@ interface TechnologyFormProps {
   adminId?: string
 }
 
-interface Technology {
-  id: string
-  title: string
-  company_id: string
-  category_id: string
-  description?: string | null
-  acronym?: string | null
-  acronym_full?: string | null
-  link1?: string | null
-  link1_title?: string | null
-  link2?: string | null
-  link2_title?: string | null
-  link3?: string | null
-  link3_title?: string | null
-}
+type CompanyOption = Pick<Company, 'id' | 'name'>
+type CategoryOption = Pick<TechnologyCategory, 'id' | 'name' | 'type'>
 
 export default function TechnologyForm({
   technology,
@@ -46,8 +22,8 @@ export default function TechnologyForm({
   onSuccess,
   adminId
 }: TechnologyFormProps) {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
+  const [companies, setCompanies] = useState<CompanyOption[]>([])
+  const [categories, setCategories] = useState<CategoryOption[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 

@@ -42,6 +42,9 @@ export interface Technology {
   company_id: string
   category_id?: string | null  // nullable로 변경 (옵션, 레거시 데이터 지원용)
   description?: string
+  acronym?: string
+  acronym_full?: string
+  image_url?: string
   link1?: string
   link1_title?: string
   link2?: string
