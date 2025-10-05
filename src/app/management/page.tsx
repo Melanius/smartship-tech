@@ -168,6 +168,7 @@ export default function ManagementPage() {
           technology_categories:category_id (name, type),
           technologies:technology_id (
             id, title, description, acronym, acronym_full,
+            image_url,
             link1, link1_title, link2, link2_title, link3, link3_title,
             company_id, created_by, updated_by, created_at, updated_at
           )
@@ -861,11 +862,17 @@ export default function ManagementPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{viewingTech.title}</h2>
+
+                  {/* 약어 전체명 */}
                   {viewingTech.acronym_full && (
-                    <p className="text-sm text-gray-600 mb-3">
-                      {viewingTech.acronym_full}
-                    </p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">🔤</span>
+                      <p className="text-base text-gray-600 font-medium">
+                        {viewingTech.acronym_full}
+                      </p>
+                    </div>
                   )}
+
                   <div className="flex items-center gap-3">
                     <CompanyBadge companyName={viewingTech.company.name} className="px-3 py-1 text-sm" />
                     {viewingTech.categories && viewingTech.categories.length > 0 && (
@@ -890,11 +897,10 @@ export default function ManagementPage() {
               {/* 대표 이미지 */}
               {(viewingTech as any).image_url && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">대표 이미지</h3>
                   <img
                     src={(viewingTech as any).image_url}
                     alt={viewingTech.title}
-                    className="w-full max-w-2xl h-64 object-cover rounded-lg border shadow-sm"
+                    className="w-full h-80 object-cover rounded-xl border-2 border-gray-300 shadow-lg"
                   />
                 </div>
               )}

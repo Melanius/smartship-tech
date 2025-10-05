@@ -114,6 +114,7 @@ export default function ComparisonPage() {
             description,
             acronym,
             acronym_full,
+            image_url,
             link1,
             link1_title,
             link2,
@@ -1115,11 +1116,22 @@ export default function ComparisonPage() {
 
             {/* 모달 바디 */}
             <div className="p-6 space-y-6">
-              {/* 기술명 */}
+              {/* 기술명과 약어 */}
               <div className="border-b border-gray-100 pb-4">
-                <h3 className="text-2xl font-bold text-hanwha-text-primary mb-3">
+                <h3 className="text-2xl font-bold text-hanwha-text-primary mb-2">
                   {selectedTech.title}
                 </h3>
+
+                {/* 약어 전체명 */}
+                {selectedTech.acronym_full && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🔤</span>
+                    <p className="text-base text-hanwha-text-secondary font-medium">
+                      {selectedTech.acronym_full}
+                    </p>
+                  </div>
+                )}
+
                 {/* 수정일 및 작성자 정보 */}
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   {selectedTech.updated_at && (
@@ -1141,13 +1153,10 @@ export default function ComparisonPage() {
               {/* 대표 이미지 */}
               {(selectedTech as any).image_url && (
                 <div>
-                  <h4 className="font-bold text-lg text-hanwha-text-primary mb-3 flex items-center gap-2">
-                    🖼️ 대표 이미지
-                  </h4>
                   <img
                     src={(selectedTech as any).image_url}
                     alt={selectedTech.title}
-                    className="w-full max-w-2xl h-64 object-cover rounded-lg border shadow-sm"
+                    className="w-full h-80 object-cover rounded-xl border-2 border-hanwha-border shadow-lg"
                   />
                 </div>
               )}
